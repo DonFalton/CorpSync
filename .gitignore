@@ -1,0 +1,18 @@
+# --- Reglas Generales ---
+.DS_Store
+.env
+.env.local
+.env.*
+
+# --- Node.js / React / Expo (Web y Móvil) ---
+node_modules/
+dist/
+.expo/
+
+# --- Java / NetBeans / Eclipse (Escritorio) ---
+*.class
+target/
+build/
+.settings/
+.classpath
+.project
