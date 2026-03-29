@@ -26,7 +26,28 @@ Este repositorio utiliza una estructura de Monorepo. Cada cliente es un ecosiste
 ```text
 Corpsync-AI/
 ├── 📁 app-web/          # Panel de control Kanban para técnicos (React)
-├── 📁 app-movil/        # App para reporte de incidencias con cámara (React Native)
+├── 📁 app-movil/        # App para reporte de incidencias con cámara (React Native o Java/Kotlin)
 ├── 📁 app-escritorio/   # Backoffice para gestión masiva y ficheros (Java Swing)
 ├── 📁 backend/          # Scripts SQL, Triggers
 └── 📄 README.md         # Documentación principal del proyecto
+```
+---
+
+## 🛠️ Requisitos Previos
+
+Por desarrollar
+
+---
+
+## 👥 Reglas de Contribución y Equipo
+
+Para mantener el historial limpio y evitar conflictos de fusión, cada miembro trabajará exclusivamente en su directorio asignado.
+
+* **Martín (Project Manager / Fullstack):** `app-web` y `backend`
+* **Rafa (Mobile Developer):** `app-movil`
+* **Germán (Desktop Developer):** `app-escritorio`
+
+**Regla de Seguridad:** NUNCA hacer commit de archivos `.env`, `.env.local`, contraseñas JDBC ni API Keys de Google Gemini.
+
+---
+*Proyecto de Trabajo Final de Ciclo - DAM*
