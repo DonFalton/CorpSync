@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@theme {
+  --color-corpsync-purple: #aa3bff;
+  --color-corpsync-dark: #16171d;
+}
