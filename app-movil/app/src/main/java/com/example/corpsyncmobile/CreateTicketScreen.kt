@@ -49,26 +49,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.storage.storage
+import com.example.corpsyncmobile.data.TicketService
 import kotlinx.coroutines.launch
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import java.io.File
 
-@Serializable
-private data class NewTicket(
-    val titulo: String,
-    val descripcion: String,
-    val categoria: String,
-    val prioridad: String,
-    @SerialName("empleado_id") val empleadoId: String,
-    @SerialName("imagen_url") val imagenUrl: String? = null
+private val categorias = mapOf(
+    "sin_categorizar" to "Sin categorizar",
+    "hardware" to "Hardware",
+    "software" to "Software",
+    "red" to "Red",
+    "otro" to "Otro"
 )
 
-private val categorias = listOf("sin_categorizar", "hardware", "software", "red", "otro")
-private val prioridades = listOf("por_asignar", "baja", "media", "alta", "critica")
+private val prioridades = mapOf(
+    "por_asignar" to "Por asignar",
+    "baja" to "Baja",
+    "media" to "Media",
+    "alta" to "Alta",
+    "critica" to "Crítica"
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,27 +119,17 @@ fun CreateTicketScreen() {
             errorMessage = null
             successMessage = null
             try {
-                val userId = supabase.auth.currentUserOrNull()?.id
-                    ?: throw Exception("Not authenticated")
-
-                var imageUrl: String? = null
-                photoUri?.let { uri ->
-                    val bytes = context.contentResolver.openInputStream(uri)?.readBytes()
+                val imageBytes = photoUri?.let { uri ->
+                    context.contentResolver.openInputStream(uri)?.readBytes()
                         ?: throw Exception("Could not read image")
-                    val fileName = "ticket_${System.currentTimeMillis()}.jpg"
-                    supabase.storage.from("ticket-images").upload(fileName, bytes)
-                    imageUrl = supabase.storage.from("ticket-images").publicUrl(fileName)
                 }
 
-                supabase.from("tickets").insert(
-                    NewTicket(
-                        titulo = titulo.trim(),
-                        descripcion = descripcion.trim(),
-                        categoria = categoria,
-                        prioridad = prioridad,
-                        empleadoId = userId,
-                        imagenUrl = imageUrl
-                    )
+                TicketService.create(
+                    titulo = titulo,
+                    descripcion = descripcion,
+                    categoria = categoria,
+                    prioridad = prioridad,
+                    imageBytes = imageBytes
                 )
 
                 successMessage = "Ticket created successfully"
@@ -324,7 +313,7 @@ fun CreateTicketScreen() {
 private fun DropdownField(
     label: String,
     selected: String,
-    options: List<String>,
+    options: Map<String, String>,
     onSelect: (String) -> Unit,
     enabled: Boolean
 ) {
@@ -334,7 +323,7 @@ private fun DropdownField(
         onExpandedChange = { if (enabled) expanded = it }
     ) {
         OutlinedTextField(
-            value = selected,
+            value = options[selected] ?: selected,
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
@@ -348,10 +337,10 @@ private fun DropdownField(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            options.forEach { option ->
+            options.forEach { (value, displayLabel) ->
                 DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = { onSelect(option); expanded = false }
+                    text = { Text(displayLabel) },
+                    onClick = { onSelect(value); expanded = false }
                 )
             }
         }
