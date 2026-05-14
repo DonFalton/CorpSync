@@ -1,0 +1,6 @@
+# Ignorar código compilado de Java
+bin/
+*.class
+
+# Ignorar archivos de crash de Java
+hs_err_pid*
