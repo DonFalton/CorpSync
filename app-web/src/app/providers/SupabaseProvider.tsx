@@ -1,6 +1,6 @@
 // src/app/providers/SupabaseProvider.tsx
 import { createContext, useContext, useEffect, useState } from 'react';
-import { Session } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../shared/api/supabase/client';
 
 interface SupabaseContextType {
@@ -22,7 +22,7 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
     });
 
     // Escuchar cambios de estado (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, currentSession: Session | null) => {
       setSession(currentSession);
     });
 
