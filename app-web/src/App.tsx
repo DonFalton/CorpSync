@@ -7,6 +7,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Tickets } from './pages/Tickets';
 import { CreateTicket } from './pages/CreateTicket';
 import { MainLayout } from './components/layout/MainLayout';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -53,6 +54,7 @@ function App() {
     <SupabaseProvider>
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
+        <Toaster position="bottom-right" />
       </QueryClientProvider>
     </SupabaseProvider>
   );

@@ -1,13 +1,87 @@
 import { useTickets } from '../hooks/useTickets';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 export const Dashboard = () => {
   const { data: tickets, isLoading, isError } = useTickets();
+  const navigate = useNavigate();
 
-  // Estados derivados
+  // Estados derivados numéricos
   const totalTickets = tickets?.length || 0;
-  const ticketsNuevos = tickets?.filter((t) => t.estado.toLowerCase() === 'nuevo').length || 0;
+  const ticketsNuevos = tickets?.filter((t) => t.estado.toLowerCase() === 'pendiente').length || 0;
   const ticketsEnProceso = tickets?.filter((t) => t.estado.toLowerCase() === 'en_proceso').length || 0;
-  const prioridadAlta = tickets?.filter((t) => String(t.prioridad) === '1').length || 0;
+  const prioridadAlta = tickets?.filter((t) => String(t.prioridad) === 'alta' || String(t.prioridad) === 'critica').length || 0;
+
+  // Procesamiento de datos para Gráficos
+  const countPorEstado = tickets?.reduce((acc: Record<string, number>, ticket) => {
+    const estado = ticket.estado;
+    acc[estado] = (acc[estado] || 0) + 1;
+    return acc;
+  }, {});
+  
+  const ticketsPorEstado = countPorEstado ? Object.entries(countPorEstado).map(([name, value]) => ({
+    name: name.replace('_', ' ').toUpperCase(),
+    originalName: name,
+    value
+  })) : [];
+
+  const COLORS: Record<string, string> = {
+    'PENDIENTE': '#9333ea',
+    'EN PROCESO': '#eab308',
+    'RESUELTO': '#16a34a',
+  };
+
+  const countPorCategoria = tickets?.reduce((acc: Record<string, number>, ticket) => {
+    const cat = ticket.categoria || 'Sin Categorizar';
+    acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {});
+
+  const ticketsPorCategoria = countPorCategoria ? Object.entries(countPorCategoria).map(([name, total]) => ({
+    name,
+    total
+  })) : [];
+
+  const handleExportCSV = () => {
+    if (!tickets || tickets.length === 0) return;
+
+    const escapeCsvField = (field: string | null | undefined) => {
+      if (!field) return '""';
+      const stringField = String(field);
+      const escaped = stringField.replace(/"/g, '""');
+      return `"${escaped}"`;
+    };
+
+    const headers = ['ID', 'Título', 'Estado', 'Prioridad', 'Categoría', 'Creado En', 'Creador', 'Técnico ID'].join(',');
+
+    const rows = tickets.map((ticket) => {
+      return [
+        ticket.id,
+        escapeCsvField(ticket.titulo),
+        escapeCsvField(ticket.estado),
+        ticket.prioridad,
+        escapeCsvField(ticket.categoria),
+        escapeCsvField(new Date(ticket.creado_en).toLocaleString()),
+        escapeCsvField(ticket.creador?.nombre),
+        escapeCsvField(ticket.tecnico_id)
+      ].join(',');
+    });
+
+    const csvContent = [headers, ...rows].join('\n');
+    // Añadimos BOM para que Excel detecte UTF-8 correctamente
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.href = url;
+    link.setAttribute('download', `reporte_tickets_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   if (isLoading) {
     return (
@@ -38,11 +112,28 @@ export const Dashboard = () => {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard General</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard General</h1>
+        
+        {tickets && tickets.length > 0 && (
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 font-medium text-sm border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          >
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            Exportar Reporte
+          </button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Metric 1 */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => navigate('/tickets', { state: { activeTab: 'todos', filterEstado: 'todos' } })}
+          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transform hover:-translate-y-1 transition-all"
+        >
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-blue-100 text-blue-600">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -57,7 +148,10 @@ export const Dashboard = () => {
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => navigate('/tickets', { state: { activeTab: 'todos', filterEstado: 'pendiente' } })}
+          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transform hover:-translate-y-1 transition-all"
+        >
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-purple-100 text-purple-600">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -72,7 +166,10 @@ export const Dashboard = () => {
         </div>
 
         {/* Metric 3 */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => navigate('/tickets', { state: { activeTab: 'todos', filterEstado: 'en_proceso' } })}
+          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transform hover:-translate-y-1 transition-all"
+        >
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -87,7 +184,10 @@ export const Dashboard = () => {
         </div>
 
         {/* Metric 4 */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => navigate('/tickets', { state: { activeTab: 'urgentes', filterEstado: 'todos' } })}
+          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transform hover:-translate-y-1 transition-all"
+        >
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-red-100 text-red-600">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -101,6 +201,71 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Gráficos Recharts */}
+      {(!tickets || tickets.length === 0) ? (
+        <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+          <p className="text-gray-500 font-medium">Datos insuficientes para generar gráficos</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          {/* Columna 1: Distribución por Estado */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-6">Distribución por Estado</h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={ticketsPorEstado}
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {ticketsPorEstado.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[entry.name] || '#3b82f6'} 
+                        onClick={() => navigate('/tickets', { state: { activeTab: 'todos', filterEstado: entry.originalName } })}
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{ outline: 'none' }}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Columna 2: Carga por Categoría */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-6">Carga por Categoría</h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ticketsPorCategoria} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                  <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip 
+                    cursor={{ fill: '#f3f4f6' }}
+                    contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                  />
+                  <Bar 
+                    dataKey="total" 
+                    fill="#3b82f6" 
+                    radius={[4, 4, 0, 0]} 
+                    onClick={(data) => navigate('/tickets', { state: { activeTab: 'todos', searchTerm: data.name === 'Sin Categorizar' ? '' : data.name } })}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Últimos Tickets Previsualización */}
       <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -108,9 +273,13 @@ export const Dashboard = () => {
         {!tickets || tickets.length === 0 ? (
           <p className="text-gray-500 text-sm">No hay actividad reciente para mostrar.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {tickets.slice(0, 3).map(ticket => (
-              <div key={ticket.id} className="flex items-center justify-between pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+              <div 
+                key={ticket.id} 
+                onClick={() => navigate('/tickets', { state: { openTicketId: ticket.id } })}
+                className="flex items-center justify-between p-3 border border-transparent hover:border-gray-200 hover:bg-gray-50 hover:shadow-sm rounded-lg transition-all cursor-pointer"
+              >
                 <div>
                   <p className="text-sm font-medium text-gray-900 line-clamp-1">{ticket.titulo}</p>
                   <p className="text-xs text-gray-500 mt-1">{new Date(ticket.creado_en).toLocaleString()}</p>
