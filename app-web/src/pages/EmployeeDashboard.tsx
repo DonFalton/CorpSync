@@ -5,6 +5,7 @@ import { NewTicketModal } from '../components/tickets/NewTicketModal';
 import { useUIStore } from '../store/useUIStore';
 import { useTicketNotifications } from '../hooks/useTicketNotifications';
 import { useNotificationStore } from '../store/useNotificationStore';
+import { useTicketsRealtime } from '../hooks/useTicketsRealtime';
 
 export const EmployeeDashboard: React.FC = () => {
   const { session, perfil } = useSupabase();
@@ -84,6 +85,9 @@ export const EmployeeDashboard: React.FC = () => {
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
+
+  // Suscripción Realtime para actualizar la lista de tickets del empleado en vivo (e.g. tras el triaje de IA)
+  useTicketsRealtime(fetchTickets);
 
   const getStatusBadge = (estado: string) => {
     const baseClasses = "px-2.5 py-0.5 rounded-full text-xs font-medium";

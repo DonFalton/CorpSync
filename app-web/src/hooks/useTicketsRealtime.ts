@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../shared/api/supabase/client';
 
-export const useTicketsRealtime = () => {
+export const useTicketsRealtime = (onUpdate?: (payload: any) => void) => {
     const queryClient = useQueryClient();
 
     useEffect(() => {
@@ -22,6 +22,11 @@ export const useTicketsRealtime = () => {
                     // Invalida TODAS las queries que contengan 'tickets' en su key.
                     // Esto forzará a useTickets.ts a hacer un re-fetch silencioso.
                     queryClient.invalidateQueries({ queryKey: ['tickets'] });
+
+                    // Si se proporciona un callback, se ejecuta para refrescar estados locales
+                    if (onUpdate) {
+                        onUpdate(payload);
+                    }
                 }
             )
             .subscribe();
@@ -30,5 +35,5 @@ export const useTicketsRealtime = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [queryClient]);
+    }, [queryClient, onUpdate]);
 };
