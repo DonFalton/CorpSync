@@ -42,20 +42,39 @@ Deno.serve(async (req: Request) => {
       return new Response("Bad Request", { status: 400 });
     }
 
-    // 3. Conectar con Gemini
+    // 3. Conectar con Gemini API (Endpoint v1beta + Gemini 2.5 Flash Estable)
     console.info(`[LOG-AI] Solicitando clasificación a Gemini para el Ticket ID: ${payload.ticket_id}`);
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-    const systemInstruction = "Eres el Agente de Triaje IT de CorpSync ITSM. Clasifica la incidencia basándote en su título y descripción.";
-
+    
+    // URL blindada según la doc de Google AI Studio (Mayo 2026)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    
     console.log(`[DEBUG-AI] ¿API Key de Gemini configurada?: ${!!GEMINI_API_KEY}`);
 
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemInstruction }] },
-        contents: [{ parts: [{ text: `Título: ${payload.titulo}\nDescripción: ${payload.descripcion}` }] }],
+        contents: [{ 
+          parts: [{ 
+            text: `Eres el Agente de Triaje IT Senior de CorpSync ITSM. Tu trabajo es leer la incidencia y clasificarla devolviendo ÚNICAMENTE un JSON válido.
+            
+            RÚBRICA DE PRIORIDADES (Aplica esto estrictamente):
+            - "baja": Dudas, peticiones de material nuevo o problemas menores donde el usuario puede seguir trabajando sin problema.
+            - "media": Un usuario está bloqueado o un software falla, pero existe una alternativa manual o solución temporal (workaround). Impacto individual.
+            - "alta": Un equipo o departamento entero está bloqueado (ej. caída de Wi-Fi local, caída de servidor de departamento). Impacto grupal.
+            - "critica": Parada total de la empresa, pérdida irreversible de datos, ransomware, o brechas de seguridad masivas.
+
+            RÚBRICA DE CATEGORÍAS:
+            - "Hardware": Componentes físicos, ratones, pantallas, equipos.
+            - "Software": Aplicaciones de negocio, Office, virus, ransomware, SO.
+            - "Redes": Conectividad, Wi-Fi, VPN, switches.
+            - "Otros": Consultas genéricas.
+            
+            Ticket a analizar:
+            Título: ${payload.titulo}
+            Descripción: ${payload.descripcion}` 
+          }] 
+        }],
         generationConfig: {
           temperature: 0.1,
           response_mime_type: "application/json",
