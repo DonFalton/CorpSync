@@ -18,13 +18,20 @@ import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 
+
+/** Clase CSVs: Clase creada para manejar CSVs y todo lo relacionado con ellos. Usa la librería OpenCSV 
+ * para extraer y guardar los registros de perfiles a y desde los archivos CSV. Concretamente usa 
+ * las clases CsvToBeanBuilder y StatefulBeanToCsvBuilder para este proceso. Tiene un atributo llamado separadores 
+ * con un array de objetos caracter que contiene los posibles caracteres separadores que la aplicación permite usar para crear y cargar archivos CSV.
+ *  En caso de querer ampliar el numero de caracteres separador solo haria falta modificar este atributo de clase.  **/
+
+
 public class CSV {
 
 	public final static Character[] separadores = new Character[] { ',', ';' };
 
-	// private final static String cabezeraCSV =
-	// "nombre,rol,departamento,email\n".toUpperCase() ;
-
+/** 1. List<Perfil> extraerCSV(File foloFile, char separador, JFrame frameReportar) : Extrae los registros de un csv y los  devuelve en una lista de perfiles.
+ *  Reporta cualquier error capturado en el proceso en el JFrame pasado como parametro mediante un mensaje de diálogo de un JOptionPane. **/
 	public static List<Perfil> extraerCSV(File foloFile, char separador, JFrame frameReportar) { // FileReader
 																									// readerDelCSV
 
@@ -57,6 +64,8 @@ public class CSV {
 
 	}//// Fin extraerCSV
 
+	/** void crearCSV(List<Perfil> listaPerfiles, File fileDelCSV, char separador, JFrame frameReportar) : Crea el CSV a partir de la lista pasada como parámetro.
+	 *  Reporta cualquier error capturado en el proceso en el JFrame pasado como parametro mediante un mensaje de diálogo de un JOptionPane. **/
 	public static void crearCSV(List<Perfil> listaPerfiles, File fileDelCSV, char separador, JFrame frameReportar) {
 
 		try(FileWriter writerDelCSV = new FileWriter(fileDelCSV);) {
@@ -85,7 +94,10 @@ public class CSV {
 		System.out.println("CSV generado");
 
 	}//// Fin crearCSV
-
+	
+	
+/**  void inicializarComboBoxDeSeparadores(JComboBox<Character> comboBoxSeparadores) : Carga los combobox usados para  seleccionar 
+ * el carácter separador en la creación o carga de CSV. Usa el citado array para hacerlo.  **/
 	public static void inicializarComboBoxDeSeparadores(JComboBox<Character> comboBoxSeparadores) {
 
 		for (Character separador : separadores) {

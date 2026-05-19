@@ -5,24 +5,26 @@ import java.util.UUID;
 import com.opencsv.bean.CsvBindByName;
 
 
+/**  Clase Perfil: Entidad que representa un perfil de la base de datos. Es una JavaBean. Publica, con el Constructor vacío (sin argumentos)
+ *  y atributos privados con sus getter y setter públicos correspondientes. También tiene otros constructores necesarios para el resto de clases. 
+ *  Tiene sobreescrito el método toString() para reflejar los campos más relevantes, nombre y email, cuando se cargan en una Jlist y cuando se roportan errores. 
+ *  Esta entidad se usa en el proceso de carga y guardado por medio de la libreria OpenCSV y sus campos están marcados con la etiqueta @CsvBindByName(column = "nombre del campo"),
+ *   necesaria para este proceso. Tambien la usan los métodos de persistencia en base de datos y los de comprobarción de la clase Utils. **/
 public class Perfil {
 	
 	
 	public UUID id;
 	 @CsvBindByName(column = "nombre")
-	 //@CsvBindByPosition(position = 0)
 	public String nombre;
 	 @CsvBindByName(column = "rol")
-	 //@CsvBindByPosition(position = 1)
 	public String rol;
 	 @CsvBindByName(column = "departamento")
-	 //@CsvBindByPosition(position = 2)
 	public String departamento;
 	 @CsvBindByName(column = "email")
-	 //@CsvBindByPosition(position = 3)
 	public String email;
+	public String contraseñaSinCifrar; 
 	 @CsvBindByName(column = "contraseña")
-	public String contraseña; //= "????????????????";
+	public String contraseñaCifrada; 
 	
 	
 	public Perfil() {
@@ -36,7 +38,7 @@ public class Perfil {
 		this.rol = rol;
 		this.departamento = departamento;
 		this.email = email;
-		this.contraseña = contraseña;
+		this.contraseñaCifrada = contraseña;
 	}
 
 	public Perfil(String nombre, String rol, String departamento, String email, String contraseña) {
@@ -45,13 +47,16 @@ public class Perfil {
 		this.rol = rol;
 		this.departamento = departamento;
 		this.email = email;
-		this.contraseña = contraseña;
+		this.contraseñaCifrada = contraseña;
 	}
 
-
-
-
-
+	public Perfil( String nombre, String rol, String departamento, String email) {
+		super();		
+		this.nombre = nombre;
+		this.rol = rol;
+		this.departamento = departamento;
+		this.email = email;
+	}
 
 	public UUID getId() {
 		return id;
@@ -85,50 +90,38 @@ public class Perfil {
 	public void setEmail(String email) {
 		this.email = email;
 	}
-	
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	
-	
-	public String getContraseña() {
-		return contraseña;
+	public String getContraseñaCifrada() {
+		return contraseñaCifrada;
 	}
 
-
-
-
-
-
-	public void setContraseña(String contraseña) {
-		this.contraseña = contraseña;
+	public void setContraseñaCifrada(String contraseñaCifrada) {
+		this.contraseñaCifrada = contraseñaCifrada;
 	}
-
-
-
-
-
-
+	
+	public String getContraseñaSinCifrar() {
+		return contraseñaSinCifrar;
+	}
+	public void setContraseñaSinCifrar(String contraseña) {
+		this.contraseñaSinCifrar = contraseña;
+	}
+	
+	
 	@Override
 	public String toString() {
 		return  nombre + " -- " + email ;
 	}
 	
 	
-	/* Hace una copia de este objeto perfil*/
+	/** Hace una copia de este objeto perfil. **/
 	public Perfil crearCopia() {
 		
 		//UUID id = new UUID(this.getId().getMostSignificantBits() ,this.getId().getLeastSignificantBits() );
 		
-		Perfil perfilCopia = new Perfil(this.id, this.nombre, this.rol , this.departamento, this.email, this.contraseña);
-		
+		Perfil perfilCopia = new Perfil(nombre, rol , departamento, email);
+		perfilCopia.setId(id);
+		perfilCopia.setContraseñaCifrada(contraseñaCifrada);
 		return perfilCopia ;
 
-	}
-	
-	
-	
-	
-	
-	
+	}	
 	
 }

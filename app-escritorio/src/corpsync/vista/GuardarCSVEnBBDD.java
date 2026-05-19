@@ -3,12 +3,9 @@ package corpsync.vista;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-
 import java.awt.BorderLayout;
-import java.awt.FlowLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.GroupLayout;
@@ -19,6 +16,7 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
 import java.util.List;
+import java.util.UUID;
 import java.awt.event.ActionEvent;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
@@ -43,17 +41,19 @@ import java.awt.Font;
 import javax.swing.JPasswordField;
 
 /**
- * Clase CrearCSVDedeBBDD : Crea un archivo CSV con los registros de perfiles de
- * la base de datos. Tiene dos listas(JList) que muestran todos los perfiles
- * cargados de la base de datos una y la otra los perfiles que se guardarán en
- * el nuevo CSV. Tiene dos paneles con campos de texto y un combobox cada uno.
- * Un panel muestra los campos seleccionados en la lista para crea el nuevo
- * archivo CSV permitiendo modificarlos o borrarlos y otro muestra los campos
- * del perfil seleccionado en la lista de base de datos y permite pasar el
- * perfil seleccinado a la lista para crear el archivo CSV.
+ * Clase GuardarCSVEnBBDD : Guarda los registos elegidos de un archivo CSV en la
+ * base de datos. Tiene dos listas(JList) que muestrantodos los perfiles de la
+ * base de datos una y la otra los perfiles del archivo CSV desde el cual se
+ * extraerán los perfiles para guardar en la base de datos. Tiene dos paneles
+ * con campos de texto y un combobox cada uno. Un panel muestra los campos
+ * seleccionados en la lista de la base de datos para permitir modificarlos o
+ * borrarlos, por si se cuela algún registro no deseado o por si se quisiera
+ * cambiar algo tras introducirlos, otro muestra los campos del perfil
+ * seleccionado en la lista del CSV cargado y también permite modificarlos o
+ * borrarlos antes de pasarlos a la base de datos.
  **/
 
-public class CrearCSVDedeBBDD extends JFrame {
+public class GuardarCSVEnBBDD extends JFrame {
 
 	/**
 	 * 
@@ -69,7 +69,7 @@ public class CrearCSVDedeBBDD extends JFrame {
 	// Componentes manipulados :
 
 	private DefaultListModel<Perfil> modelo_jList_PerfilesBBDD;
-	private DefaultListModel<Perfil> modelo_jList_PerfilesCrearCSV;
+	private DefaultListModel<Perfil> modelo_jList_PerfilesCSV;
 	private JList<Perfil> jList_PerfilesBBDD;
 	private JList<Perfil> jList_PerfilesCSV;
 	private JTextField textField_departamento_Sup;
@@ -83,24 +83,24 @@ public class CrearCSVDedeBBDD extends JFrame {
 
 	private JComboBox<String> comboBox_Rol_Inf;
 	private JComboBox<String> comboBox_Rol_Sup;
-	private JComboBox<Character> comboBox_CrearCSV;
+	private JComboBox<Character> comboBox;
 	private JPasswordField textField_ContraseñaCifrada_Inf;
-	private JPasswordField passwordField_NuevaContraseña;
 	private JPasswordField textField_ContraseñaCifrada_Sup;
+	private JPasswordField passwordField_NuevaContraseña;
 
 	/*
 	 * Solo para pruevas public static void main(String[] args) {
 	 * EventQueue.invokeLater(new Runnable() { public void run() { try {
-	 * CrearCSVDedeBBDD frame = new CrearCSVDedeBBDD(); frame.setVisible(true); }
+	 * GuardarCSVEnBBDD frame = new GuardarCSVEnBBDD(); frame.setVisible(true); }
 	 * catch (Exception e) { e.printStackTrace(); } } }); }
 	 */
 
-	// Solo para pruevas
-	public CrearCSVDedeBBDD() {
+	// Constructor Solo para pruevas
+	public GuardarCSVEnBBDD() {
 
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		setBounds(100, 100, 1010, 650);
-		setMinimumSize(new Dimension(1010, 650));
+		setBounds(100, 100, 985, 650);
+		setMinimumSize(new Dimension(1020, 650));
 		accesoBBDD = new AccesoADatosBBDD(); // +++
 		addWindowListener(new WindowAdapter() {
 			@Override
@@ -114,16 +114,17 @@ public class CrearCSVDedeBBDD extends JFrame {
 
 		inicializarGUI();
 	}
-
+	
 	/** Es el constructor usado para crear la clase en produccion. Crea una instancia de la clase AccesoADatosBBDD para usar sus métodos de persistencia en base de datos.
 	 * crea el manejador de eventos que que trata el evento de cierre de ventana aciendo visible la ventana principal y cerrando esta.
 	 *  Recibe como parametro una referancia a la ventana principal para poderla hacer visible de nuevo. Fija tambien el tamaño minimo de la ventana.
 	 *  Por ultimo ejecuta el método inicializarGUI() que inizializa los componentes visuales**/
-	public CrearCSVDedeBBDD(VentanaPrincipal ventanaPrincipal) {
 
+	public GuardarCSVEnBBDD(VentanaPrincipal ventanaPrincipal) {
+
+		// setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		setBounds(100, 100, 1010, 650);
-		setMinimumSize(new Dimension(1010, 650));
+		setMinimumSize(new Dimension(1020, 650));
 
 		accesoBBDD = new AccesoADatosBBDD(); // +++
 		addWindowListener(new WindowAdapter() {
@@ -151,7 +152,7 @@ public class CrearCSVDedeBBDD extends JFrame {
 		panel_1.setBackground(new Color(192, 192, 192));
 		JPanel panel_Izquierdo = new JPanel();
 		JPanel panel_Derecho = new JPanel();
-		panel_Derecho.setBackground(new Color(0, 128, 128));
+		panel_Derecho.setBackground(new Color(0, 128, 192));
 		JPanel panel_central_Bordes_1 = new JPanel();
 		JPanel panel_box_sup = new JPanel();
 		JPanel panel_box_inf = new JPanel();
@@ -174,11 +175,11 @@ public class CrearCSVDedeBBDD extends JFrame {
 		lblNewLabel_BBDD.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		JLabel lblNewLabel_8 = new JLabel("EMail");
 		JLabel lblNewLabel_10 = new JLabel("Modificar y eliminar perfil de la lista de CSV    >>>");
-		JLabel lblNewLabel_4 = new JLabel("Nombre");
-		JLabel lblNewLabel_9 = new JLabel("<<<   A\u00F1adir perfil desde base de datos");
-		JLabel lblNewLabel_5 = new JLabel("Rol");
-		JLabel lblNewLabel_6 = new JLabel("Departamento");
-		JLabel lblNewLabel_7 = new JLabel("EMail");
+		JLabel lblNewLabel_4 = new JLabel(" Nombre");
+		JLabel lblNewLabel_9 = new JLabel("<<<   Modificar y borrar perfil en base de datos");
+		JLabel lblNewLabel_5 = new JLabel(" Rol");
+		JLabel lblNewLabel_6 = new JLabel(" Departamento");
+		JLabel lblNewLabel_7 = new JLabel(" EMail");
 		JButton botonModificarPerfilCSV = new JButton("Modificar Perfil");
 
 		//////////////////////////////////////////////////////////////////
@@ -200,7 +201,7 @@ public class CrearCSVDedeBBDD extends JFrame {
 				manejadorSeleccion_jList_PerfilesCSV();
 			}
 		});
-		modelo_jList_PerfilesCrearCSV = new DefaultListModel<Perfil>();
+		modelo_jList_PerfilesCSV = new DefaultListModel<Perfil>();
 
 		// ++++++++++++++++++++ Fin Componentes manipulados
 		// +++++++++++++++++++++++++++++++++++
@@ -216,7 +217,7 @@ public class CrearCSVDedeBBDD extends JFrame {
 
 		contentPane.add(panel, BorderLayout.NORTH);
 
-		JLabel etiquetaTitulo = new JLabel("Crear CSV con perfiles de la base de datos");
+		JLabel etiquetaTitulo = new JLabel("Cargar CSV y guardar en Base de Datos");
 		panel.add(etiquetaTitulo);
 
 		contentPane.add(panel_1, BorderLayout.SOUTH);
@@ -226,34 +227,28 @@ public class CrearCSVDedeBBDD extends JFrame {
 
 		JScrollPane scrollPane = new JScrollPane();
 
-		JButton button_Refrescar_ListaBBDD = new JButton("Refrescar Lista");
-		button_Refrescar_ListaBBDD.addActionListener(new ActionListener() {
+		JButton button_Refrescar_Lista = new JButton("Refrescar Lista");
+		button_Refrescar_Lista.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				recargar_jList_PerfilesBBDD();// +++++++++++++++++++++++++++++++++++
 
 			}
 		});
-
-		JButton boton_AñadirSeleccionadosACSV = new JButton("A\u00F1adir seleccionados a CSV >>>");
-		boton_AñadirSeleccionadosACSV.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				manejador_boton_AñadirSeleccionadosACSV();
-			}
-		});
 		GroupLayout gl_panel_Izquierdo = new GroupLayout(panel_Izquierdo);
 		gl_panel_Izquierdo.setHorizontalGroup(gl_panel_Izquierdo.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_Izquierdo.createSequentialGroup().addContainerGap().addGroup(gl_panel_Izquierdo
-						.createParallelGroup(Alignment.LEADING)
-						.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 228, Short.MAX_VALUE)
-						.addComponent(lblNewLabel_BBDD, GroupLayout.PREFERRED_SIZE, 69, GroupLayout.PREFERRED_SIZE)
-						.addComponent(boton_AñadirSeleccionadosACSV, GroupLayout.DEFAULT_SIZE, 228, Short.MAX_VALUE)
-						.addComponent(button_Refrescar_ListaBBDD)).addContainerGap()));
+				.addGroup(gl_panel_Izquierdo.createSequentialGroup()
+						.addGroup(gl_panel_Izquierdo.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panel_Izquierdo.createSequentialGroup().addContainerGap().addComponent(
+										lblNewLabel_BBDD, GroupLayout.PREFERRED_SIZE, 69, GroupLayout.PREFERRED_SIZE))
+								.addGroup(gl_panel_Izquierdo.createSequentialGroup().addContainerGap()
+										.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 228, Short.MAX_VALUE))
+								.addGroup(gl_panel_Izquierdo.createSequentialGroup().addGap(67)
+										.addComponent(button_Refrescar_Lista)))
+						.addContainerGap()));
 		gl_panel_Izquierdo.setVerticalGroup(gl_panel_Izquierdo.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel_Izquierdo.createSequentialGroup().addComponent(lblNewLabel_BBDD).addGap(16)
-						.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 471, Short.MAX_VALUE)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(boton_AñadirSeleccionadosACSV)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(button_Refrescar_ListaBBDD)
-						.addGap(5)));
+						.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE)
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(button_Refrescar_Lista).addGap(5)));
 		scrollPane.setViewportView(jList_PerfilesBBDD);
 		jList_PerfilesBBDD.addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent e) {
@@ -261,20 +256,27 @@ public class CrearCSVDedeBBDD extends JFrame {
 			}
 		});
 
-		jList_PerfilesBBDD.setModel(modelo_jList_PerfilesBBDD);
+		jList_PerfilesBBDD.setModel(modelo_jList_PerfilesBBDD);// ++++++++
 		panel_Izquierdo.setLayout(gl_panel_Izquierdo);
 
 		contentPane.add(panel_Derecho, BorderLayout.EAST);
 
-		JLabel lblNewLabel_CSV = new JLabel("Nuevo CSV");
+		JLabel lblNewLabel_CSV = new JLabel("CSV");
 		lblNewLabel_CSV.setFont(new Font("Tahoma", Font.PLAIN, 14));
 
 		JScrollPane scrollPane_1 = new JScrollPane();
 
-		JButton boton_CrearCSV = new JButton("CrearCSV");
-		boton_CrearCSV.addActionListener(new ActionListener() {
+		JButton boton_CargarCSV = new JButton("Cargar CSV");
+		boton_CargarCSV.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				manejador_boton_CrearCSV();
+				manejador_boton_CargarCSV();
+			}
+		});
+
+		JButton botonGuardarCSVEnBBDD = new JButton("Guardar En BBDD");
+		botonGuardarCSVEnBBDD.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				manejador_boton_GuardarListaCSVEnBBDD();
 			}
 		});
 
@@ -286,51 +288,53 @@ public class CrearCSVDedeBBDD extends JFrame {
 			}
 		});
 
-		JLabel lblNewLabel_3 = new JLabel("Separador:");
+		JLabel lblNewLabel_3 = new JLabel("Caracter separador:");
 
-		comboBox_CrearCSV = new JComboBox<Character>();
-		CSV.inicializarComboBoxDeSeparadores(comboBox_CrearCSV);
+		comboBox = new JComboBox<Character>();
+		CSV.inicializarComboBoxDeSeparadores(comboBox);
 
-		JButton boton_OrdenarListaCSVGuardar = new JButton("Ordenar Lista");
-		boton_OrdenarListaCSVGuardar.addActionListener(new ActionListener() {
+		JButton boton_OrdenarListaCSVCargado = new JButton("Ordenar Lista");
+		boton_OrdenarListaCSVCargado.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				manejador_boton_OrdenarListaCSVNuevo();
+				manejador_boton_OrdenarListaCSVCargado();
 			}
+
 		});
 		GroupLayout gl_panel_Derecho = new GroupLayout(panel_Derecho);
-		gl_panel_Derecho.setHorizontalGroup(gl_panel_Derecho.createParallelGroup(Alignment.TRAILING)
+		gl_panel_Derecho.setHorizontalGroup(gl_panel_Derecho.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel_Derecho.createSequentialGroup().addContainerGap().addGroup(gl_panel_Derecho
-						.createParallelGroup(Alignment.LEADING)
-						.addComponent(scrollPane_1, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 219, Short.MAX_VALUE)
-						.addGroup(Alignment.TRAILING, gl_panel_Derecho.createSequentialGroup()
-								.addComponent(lblNewLabel_CSV, GroupLayout.PREFERRED_SIZE, 78,
-										GroupLayout.PREFERRED_SIZE)
-								.addPreferredGap(ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
-								.addComponent(lblNewLabel_3).addPreferredGap(ComponentPlacement.RELATED).addComponent(
-										comboBox_CrearCSV, GroupLayout.PREFERRED_SIZE, 38, GroupLayout.PREFERRED_SIZE))
+						.createParallelGroup(Alignment.TRAILING).addComponent(scrollPane_1, 0, 0, Short.MAX_VALUE)
 						.addGroup(gl_panel_Derecho.createSequentialGroup()
-								.addComponent(boton_BorrarLista, GroupLayout.PREFERRED_SIZE, 106,
+								.addComponent(lblNewLabel_CSV, GroupLayout.PREFERRED_SIZE, 29,
 										GroupLayout.PREFERRED_SIZE)
-								.addPreferredGap(ComponentPlacement.RELATED, 16, Short.MAX_VALUE)
-								.addComponent(boton_OrdenarListaCSVGuardar))
-						.addComponent(boton_CrearCSV, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 219,
-								Short.MAX_VALUE))
+								.addGap(42).addComponent(lblNewLabel_3).addPreferredGap(ComponentPlacement.UNRELATED)
+								.addComponent(comboBox, GroupLayout.PREFERRED_SIZE, 38, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_panel_Derecho.createSequentialGroup().addGap(10).addGroup(gl_panel_Derecho
+								.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panel_Derecho.createSequentialGroup().addComponent(boton_BorrarLista)
+										.addPreferredGap(ComponentPlacement.UNRELATED)
+										.addComponent(boton_OrdenarListaCSVCargado))
+								.addComponent(botonGuardarCSVEnBBDD, GroupLayout.PREFERRED_SIZE, 202,
+										GroupLayout.PREFERRED_SIZE)
+								.addComponent(boton_CargarCSV, GroupLayout.PREFERRED_SIZE, 202,
+										GroupLayout.PREFERRED_SIZE))
+								.addGap(5)))
 						.addContainerGap()));
 		gl_panel_Derecho.setVerticalGroup(gl_panel_Derecho.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel_Derecho.createSequentialGroup()
 						.addGroup(gl_panel_Derecho.createParallelGroup(Alignment.BASELINE)
-								.addComponent(comboBox_CrearCSV, GroupLayout.PREFERRED_SIZE, 21,
+								.addComponent(lblNewLabel_CSV, GroupLayout.PREFERRED_SIZE, 14,
 										GroupLayout.PREFERRED_SIZE)
-								.addComponent(lblNewLabel_3).addComponent(lblNewLabel_CSV, GroupLayout.PREFERRED_SIZE,
-										14, GroupLayout.PREFERRED_SIZE))
-						.addGap(18).addComponent(scrollPane_1, GroupLayout.DEFAULT_SIZE, 462, Short.MAX_VALUE)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(boton_CrearCSV)
+								.addComponent(lblNewLabel_3)
+								.addComponent(comboBox, GroupLayout.PREFERRED_SIZE, 21, GroupLayout.PREFERRED_SIZE))
+						.addGap(18).addComponent(scrollPane_1, GroupLayout.DEFAULT_SIZE, 434, Short.MAX_VALUE)
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(botonGuardarCSVEnBBDD)
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addGroup(gl_panel_Derecho.createParallelGroup(Alignment.BASELINE)
-								.addComponent(boton_BorrarLista).addComponent(boton_OrdenarListaCSVGuardar))
-						.addContainerGap()));
+								.addComponent(boton_BorrarLista).addComponent(boton_OrdenarListaCSVCargado))
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(boton_CargarCSV).addGap(7)));
 
-		jList_PerfilesCSV.setModel(modelo_jList_PerfilesCrearCSV);// ++++++++
+		jList_PerfilesCSV.setModel(modelo_jList_PerfilesCSV);// ++++++++
 
 		scrollPane_1.setViewportView(jList_PerfilesCSV);
 		panel_Derecho.setLayout(gl_panel_Derecho);
@@ -351,7 +355,6 @@ public class CrearCSVDedeBBDD extends JFrame {
 		panel_box_sup.add(panel_4);
 
 		textField_nombre_Sup = new JTextField();
-		textField_nombre_Sup.setEditable(false);
 		textField_nombre_Sup.setColumns(10);
 		GroupLayout gl_panel_4 = new GroupLayout(panel_4);
 		gl_panel_4.setHorizontalGroup(gl_panel_4.createParallelGroup(Alignment.LEADING)
@@ -372,40 +375,51 @@ public class CrearCSVDedeBBDD extends JFrame {
 		panel_box_sup.add(panel_7);
 
 		comboBox_Rol_Sup = new JComboBox<String>();
-		comboBox_Rol_Sup.setEnabled(false);
 
 		Roles.inicializarComboBoxDeRoles(comboBox_Rol_Sup); /// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 		JLabel label_Contrasea1 = new JLabel("Contrase\u00F1a");
+		// Por seguridad el campo contraseña y su etiqueta, de momento, se oculta. Se
+		// deja por posibles cambios.
+		label_Contrasea1.setVisible(true);
 
 		textField_ContraseñaCifrada_Sup = new JPasswordField();
 		GroupLayout gl_panel_7 = new GroupLayout(panel_7);
 		gl_panel_7.setHorizontalGroup(gl_panel_7.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel_7.createSequentialGroup()
-						.addComponent(lblNewLabel_5, GroupLayout.PREFERRED_SIZE, 45, GroupLayout.PREFERRED_SIZE)
-						.addGap(27).addComponent(comboBox_Rol_Sup, 0, 158, Short.MAX_VALUE)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(label_Contrasea1)
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addComponent(textField_ContraseñaCifrada_Sup, GroupLayout.DEFAULT_SIZE, 154, Short.MAX_VALUE)
-						.addGap(43)));
-		gl_panel_7.setVerticalGroup(gl_panel_7.createParallelGroup(Alignment.TRAILING).addGroup(gl_panel_7
-				.createSequentialGroup()
-				.addGroup(gl_panel_7.createParallelGroup(Alignment.LEADING).addComponent(lblNewLabel_5)
-						.addGroup(gl_panel_7.createSequentialGroup().addContainerGap()
-								.addGroup(gl_panel_7.createParallelGroup(Alignment.BASELINE)
-										.addComponent(comboBox_Rol_Sup, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addGroup(gl_panel_7.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panel_7.createSequentialGroup()
+										.addComponent(lblNewLabel_5, GroupLayout.PREFERRED_SIZE, 45,
+												GroupLayout.PREFERRED_SIZE)
+										.addGap(25))
+								.addGroup(gl_panel_7.createSequentialGroup().addGap(28)
+										.addComponent(comboBox_Rol_Sup, 0, 187, Short.MAX_VALUE)
+										.addPreferredGap(ComponentPlacement.RELATED)))
+						.addGroup(gl_panel_7.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panel_7.createSequentialGroup().addGap(43)
+										.addComponent(textField_ContraseñaCifrada_Sup, GroupLayout.DEFAULT_SIZE, 124,
+												Short.MAX_VALUE)
+										.addGap(43))
+								.addGroup(gl_panel_7.createSequentialGroup().addGap(33).addComponent(label_Contrasea1)
+										.addContainerGap()))));
+		gl_panel_7.setVerticalGroup(gl_panel_7.createParallelGroup(Alignment.TRAILING)
+				.addGroup(gl_panel_7.createSequentialGroup().addGap(0, 0, Short.MAX_VALUE)
+						.addGroup(gl_panel_7.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panel_7.createSequentialGroup().addComponent(lblNewLabel_5)
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(comboBox_Rol_Sup,
+												GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+												GroupLayout.PREFERRED_SIZE))
+								.addGroup(gl_panel_7.createSequentialGroup().addGap(1).addComponent(label_Contrasea1)
+										.addPreferredGap(ComponentPlacement.RELATED)
 										.addComponent(textField_ContraseñaCifrada_Sup, GroupLayout.PREFERRED_SIZE,
 												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
-						.addComponent(label_Contrasea1))
-				.addContainerGap(17, Short.MAX_VALUE)));
+						.addGap(31)));
 		panel_7.setLayout(gl_panel_7);
 		panel_8.setBackground(new Color(255, 128, 0));
 
 		panel_box_sup.add(panel_8);
 
 		textField_departamento_Sup = new JTextField();
-		textField_departamento_Sup.setEditable(false);
 		textField_departamento_Sup.setColumns(10);
 		GroupLayout gl_panel_8 = new GroupLayout(panel_8);
 		gl_panel_8.setHorizontalGroup(gl_panel_8.createParallelGroup(Alignment.LEADING).addGroup(gl_panel_8
@@ -423,7 +437,6 @@ public class CrearCSVDedeBBDD extends JFrame {
 		panel_box_sup.add(panel_9);
 
 		textField_eMail_Sup = new JTextField();
-		textField_eMail_Sup.setEditable(false);
 		textField_eMail_Sup.setColumns(10);
 		GroupLayout gl_panel_9 = new GroupLayout(panel_9);
 		gl_panel_9.setHorizontalGroup(gl_panel_9.createParallelGroup(Alignment.LEADING)
@@ -442,23 +455,31 @@ public class CrearCSVDedeBBDD extends JFrame {
 		panel_13.setBackground(new Color(215, 137, 21));
 		panel_box_sup.add(panel_13);
 
-		JButton boton_AñadirPerfilACSV = new JButton("A\u00F1adir Perfil a CSV  >>>");
-		boton_AñadirPerfilACSV.addActionListener(new ActionListener() {
+		JButton boton_BorrarPerfil = new JButton("Borrar Perfil");
+		boton_BorrarPerfil.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				manejador_Boton_AñadirPerfilACSV();
+				manejador_BotonBorrarPerfil();
 			}
 		});
-		panel_13.add(boton_AñadirPerfilACSV);
-		panel_box_inf.setBackground(new Color(0, 128, 128));
+		panel_13.add(boton_BorrarPerfil);
+
+		JButton boton_ActualizarPerfil = new JButton("Actualizar Perfil");
+		boton_ActualizarPerfil.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				manejador_Boton_ActualizarPerfil();
+			}
+		});
+		panel_13.add(boton_ActualizarPerfil);
+		panel_box_inf.setBackground(new Color(0, 128, 192));
 
 		panel_central_Bordes_1.add(panel_box_inf);
 		panel_box_inf.setLayout(new BoxLayout(panel_box_inf, BoxLayout.Y_AXIS));
-		panel_5.setBackground(new Color(0, 128, 128));
+		panel_5.setBackground(new Color(0, 128, 192));
 
 		panel_box_inf.add(panel_5);
 
 		panel_5.add(lblNewLabel_10);
-		panel_6.setBackground(new Color(128, 128, 0));
+		panel_6.setBackground(new Color(0, 128, 255));
 
 		panel_box_inf.add(panel_6);
 		GroupLayout gl_panel_6 = new GroupLayout(panel_6);
@@ -473,7 +494,7 @@ public class CrearCSVDedeBBDD extends JFrame {
 								GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
 				.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
 		panel_6.setLayout(gl_panel_6);
-		panel_10.setBackground(new Color(128, 128, 0));
+		panel_10.setBackground(new Color(0, 128, 255));
 
 		panel_box_inf.add(panel_10);
 
@@ -489,11 +510,11 @@ public class CrearCSVDedeBBDD extends JFrame {
 		gl_panel_10.setHorizontalGroup(gl_panel_10.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel_10.createSequentialGroup()
 						.addComponent(lblNewLabel_1, GroupLayout.PREFERRED_SIZE, 27, GroupLayout.PREFERRED_SIZE)
-						.addGap(43).addComponent(comboBox_Rol_Inf, 0, 145, Short.MAX_VALUE)
+						.addGap(43).addComponent(comboBox_Rol_Inf, 0, 126, Short.MAX_VALUE)
 						.addPreferredGap(ComponentPlacement.RELATED).addComponent(label_Contrasea2)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(textField_ContraseñaCifrada_Inf,
-								GroupLayout.PREFERRED_SIZE, 161, GroupLayout.PREFERRED_SIZE)
-						.addGap(31)));
+						.addPreferredGap(ComponentPlacement.RELATED)
+						.addComponent(textField_ContraseñaCifrada_Inf, GroupLayout.DEFAULT_SIZE, 134, Short.MAX_VALUE)
+						.addGap(38)));
 		gl_panel_10.setVerticalGroup(gl_panel_10.createParallelGroup(Alignment.TRAILING).addGroup(gl_panel_10
 				.createSequentialGroup()
 				.addGroup(gl_panel_10.createParallelGroup(Alignment.LEADING).addComponent(lblNewLabel_1)
@@ -504,9 +525,9 @@ public class CrearCSVDedeBBDD extends JFrame {
 										.addComponent(textField_ContraseñaCifrada_Inf, GroupLayout.PREFERRED_SIZE,
 												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
 						.addComponent(label_Contrasea2))
-				.addContainerGap(16, Short.MAX_VALUE)));
+				.addContainerGap(15, Short.MAX_VALUE)));
 		panel_10.setLayout(gl_panel_10);
-		panel_11.setBackground(new Color(128, 128, 0));
+		panel_11.setBackground(new Color(0, 128, 255));
 
 		panel_box_inf.add(panel_11);
 		// comboBox.addItem(nombre);
@@ -523,7 +544,7 @@ public class CrearCSVDedeBBDD extends JFrame {
 										GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
 						.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
 		panel_11.setLayout(gl_panel_11);
-		panel_14.setBackground(new Color(128, 128, 0));
+		panel_14.setBackground(new Color(0, 128, 255));
 
 		panel_box_inf.add(panel_14);
 		GroupLayout gl_panel_14 = new GroupLayout(panel_14);
@@ -539,8 +560,10 @@ public class CrearCSVDedeBBDD extends JFrame {
 		panel_14.setLayout(gl_panel_14);
 
 		JPanel panel_3 = new JPanel();
-		panel_3.setBackground(new Color(128, 128, 0));
+		panel_3.setBackground(new Color(0, 128, 255));
 		panel_box_inf.add(panel_3);
+
+		JLabel lblNewLabel_11 = new JLabel("Contrase\u00F1a nueva:");
 
 		passwordField_NuevaContraseña = new JPasswordField();
 
@@ -550,22 +573,23 @@ public class CrearCSVDedeBBDD extends JFrame {
 				manejador_BotonCambiarContraseña();
 			}
 		});
-
-		JLabel lblNewLabel_11 = new JLabel("Contrase\u00F1a nueva:");
 		GroupLayout gl_panel_3 = new GroupLayout(panel_3);
-		gl_panel_3.setHorizontalGroup(gl_panel_3.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_3.createSequentialGroup().addComponent(lblNewLabel_11).addGap(18)
-						.addComponent(passwordField_NuevaContraseña, GroupLayout.PREFERRED_SIZE, 179,
-								GroupLayout.PREFERRED_SIZE)
-						.addGap(18).addComponent(boton_CambiarContraseña).addContainerGap(84, Short.MAX_VALUE)));
+		gl_panel_3.setHorizontalGroup(gl_panel_3.createParallelGroup(Alignment.LEADING).addGroup(gl_panel_3
+				.createSequentialGroup().addComponent(lblNewLabel_11).addPreferredGap(ComponentPlacement.UNRELATED)
+				.addComponent(passwordField_NuevaContraseña, GroupLayout.PREFERRED_SIZE, 155,
+						GroupLayout.PREFERRED_SIZE)
+				.addGap(18)
+				.addComponent(boton_CambiarContraseña, GroupLayout.PREFERRED_SIZE, 163, GroupLayout.PREFERRED_SIZE)
+				.addContainerGap(70, Short.MAX_VALUE)));
 		gl_panel_3.setVerticalGroup(gl_panel_3.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_3.createSequentialGroup().addGap(6)
+				.addGroup(gl_panel_3.createSequentialGroup()
 						.addGroup(gl_panel_3.createParallelGroup(Alignment.BASELINE).addComponent(lblNewLabel_11)
 								.addComponent(passwordField_NuevaContraseña, GroupLayout.PREFERRED_SIZE,
 										GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(boton_CambiarContraseña))));
+								.addComponent(boton_CambiarContraseña))
+						.addContainerGap(19, Short.MAX_VALUE)));
 		panel_3.setLayout(gl_panel_3);
-		panel_12.setBackground(new Color(0, 128, 128));
+		panel_12.setBackground(new Color(0, 128, 192));
 		panel_box_inf.add(panel_12);
 
 		botonModificarPerfilCSV.addActionListener(new ActionListener() {
@@ -583,22 +607,22 @@ public class CrearCSVDedeBBDD extends JFrame {
 				manejador_BotonEliminarPerfilCSV();
 			}
 		});
-		panel_12.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-		panel_12.add(botonModificarPerfilCSV);
 		panel_12.add(botonEliminarPerfilCSV);
+
+		panel_12.add(botonModificarPerfilCSV);
 
 		recargar_jList_PerfilesBBDD();// ++++++++++++++++++++++++
 	}/// FIN
 		/// inicializarGUI()///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// contraseñaSinCifrar.equals("")
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/** Ordena los perfiles cargados en la JList del mismo panel en orden alfabetico segun el campo nombre de estos **/
-	private void manejador_boton_OrdenarListaCSVNuevo() {
+	private void manejador_boton_OrdenarListaCSVCargado() {
 
 		Utils.ordenarJList(jList_PerfilesCSV);
 
 	}
-
+	
 	/** Cambia y cifra la contraseña del perfil seleccionado. Comprueba si el camco esta vacio o solo tiene espacios con el metodo Utils.comprobarStringNoVacio() que reporta esta situaccion con un JPanel.
 	 * Usa el metodo cifrarContraseña() de la clase AccesoADatosBBDD para cifrarla. Este metodo captura cualquier excepcion que ocurriera en el proceso y la reporta en el JFrame desde el que se invoca.
 	 *  Limpia el campo contraseña y por ultimo eporta si el cambio fue exitoso.  **/
@@ -618,48 +642,14 @@ public class CrearCSVDedeBBDD extends JFrame {
 		String contraseñaCifrada = accesoBBDD.cifrarContraseña(contraseñaSinCifrar, this);
 		perfilSeleccionadoCSV.setContraseñaCifrada(contraseñaCifrada);
 		passwordField_NuevaContraseña.setText("");
-
 		JOptionPane.showMessageDialog(this, "Se ha cambiado la contraseña del perfil: " + perfilSeleccionadoCSV);
 
 		System.out.println("--Cambiada contraseña de perfil: " + perfilSeleccionadoCSV);
 	}// Fin manejador_BotonCambiarContraseña()
 
-	/**
-	 * manejador_botonANuevoCSV() Carga los perfiles seleccionados en la lista para
-	 * crear el nuevo archivo CSV Y los elimina de la lista donde estaban.
-	 **/
-	private void manejador_boton_AñadirSeleccionadosACSV() {
-
-		if (jList_PerfilesBBDD.isSelectionEmpty()) {
-			return;
-		}
-		List<Perfil> perfilesSeleccionados = jList_PerfilesBBDD.getSelectedValuesList();
-		Utils.cargarListaDePerfilesEnJList(perfilesSeleccionados, modelo_jList_PerfilesCrearCSV);
-		Utils.eliminarListaDePerfilesEnJList(perfilesSeleccionados, modelo_jList_PerfilesBBDD);
-	}
-
-	/**
-	 * manejador_Boton_Actualizar_Perfil(): Añade un perfil de la BBDD a la lista
-	 * para crear un nuevo CSV.
-	 **/
-	private void manejador_Boton_AñadirPerfilACSV() {
-
-		if (jList_PerfilesBBDD.isSelectionEmpty()) {
-			return;
-		}
-		Perfil perfilSeleccionad = jList_PerfilesBBDD.getSelectedValue();
-
-		modelo_jList_PerfilesCrearCSV.addElement(perfilSeleccionad);
-		modelo_jList_PerfilesBBDD.removeElement(perfilSeleccionad);
-
-		limpiarCampos_Superiores();
-	}
-	
-	/**  Limpia la lista situada en su mismo panel.
-	 */
 	private void manejadorBorrarListaCSV() {
 
-		modelo_jList_PerfilesCrearCSV.clear();
+		modelo_jList_PerfilesCSV.clear();
 
 	}// Fin manejadorBorrarListaCSV()
 
@@ -672,7 +662,7 @@ public class CrearCSVDedeBBDD extends JFrame {
 		if (perfilSeleccionadoCSV == null) {
 			return;
 		}
-		modelo_jList_PerfilesCrearCSV.removeElement(perfilSeleccionadoCSV);
+		modelo_jList_PerfilesCSV.removeElement(perfilSeleccionadoCSV);
 		limpiarCampos_Inferiores();
 		jList_PerfilesCSV.clearSelection();
 
@@ -680,16 +670,16 @@ public class CrearCSVDedeBBDD extends JFrame {
 
 	/**
 	 * Modifica el perfil seleccionado de la lista de perfiles cargados de archivos
-	 * CSV segun los campos inferiores
+	 * CSV segun los campos inferiores. El campo Contraseña no se modifica aqui
 	 */
 	private void manejador_BotonModificarPerfilCSV() {
+
+		// modifica campos no contra
 
 		String nombre = textField_nombre_Inf.getText();
 		String rol = (String) comboBox_Rol_Inf.getSelectedItem();
 		String departamento = textField_departamento_Inf.getText();
 		String email = textField_eMail_Inf.getText();
-		// String contraseña = textField_Contraseña_Inf.getText(); Desde boton cambiar
-		// contra
 
 		Perfil nuevoPerfil = new Perfil(nombre, rol, departamento, email);
 
@@ -702,55 +692,68 @@ public class CrearCSVDedeBBDD extends JFrame {
 		perfilSeleccionadoCSV.setRol(nuevoPerfil.getRol());
 		perfilSeleccionadoCSV.setDepartamento(nuevoPerfil.getDepartamento());
 		perfilSeleccionadoCSV.setEmail(nuevoPerfil.getEmail());
-		// perfilSeleccionadoCSV.setContraseña(nuevoPerfil.getContraseña());
+		// perfilSeleccionadoCSV.setContraseñaSinCifrar(nuevoPerfil.getContraseñaSinCifrar());
 
 		limpiarCampos_Inferiores();
 		jList_PerfilesCSV.clearSelection();
 
 	}// Fin manejador_BotonModificarPerfilCSV()
 
-	/**
-	 * manejadorBotonCrearCSV(): Crea el CSV a partir de los perfiles de la JList situada en el mismo panel que el boton que dispara el evento.
-	 * Utiliza la clase JFileChooser para crear el objeto File del archivo en el cual se creara el CSV estableciendo primero un filtroDeArchivo (FileNameExtensionFilter)
-	 * para solo archivos CSV. Crea una lista de objetos perfil de la JList con el metodo Utils.crearListaDePerfilesDeJList()
-	 *  a partir del modelo que esta guarda Y se lo pasa como parametro al método CSV.crearCSV() que crea finalmente el archivo. 
-	 *  Este ultimo método reporta cualquier fallo ocurrido en el proceso en el propio JFrame a traves de la referencia de este pasada como parametro.
-	 **/
-	private void manejador_boton_CrearCSV() {
+	/** Guarda los objetos de la lista en la BBDD. Previamente limpia y comprueva que los campos no esten vacios y comprueva que la contraseña este cifrada en el formato correcto. **/
+	private void manejador_boton_GuardarListaCSVEnBBDD() {
+
+		for (Object perfil : modelo_jList_PerfilesCSV.toArray()) {
+			// Object perfil = modelo_jList_PerfilesCSV.getElementAt(i);
+			System.out.println(perfil);
+
+			boolean perfilCorrecto = Utils.limtiarYComprobarPerfilConContraseñaCifrada((Perfil) perfil, this);
+			if (!perfilCorrecto) {
+				continue;
+			}
+			boolean contraseñaCorrecta = Utils
+					.comprobarSiContraseñaCifradaFormatoCorrecto(((Perfil) perfil).getContraseñaCifrada(), this);
+			if (!contraseñaCorrecta) {
+				continue;
+			}
+
+			boolean exitoAlGuardar = accesoBBDD.guardarPerfilConContraseñaCifrada((Perfil) perfil, this);
+			if (exitoAlGuardar) {
+				modelo_jList_PerfilesCSV.removeElement(perfil);
+			}
+
+		}
+		recargar_jList_PerfilesBBDD();
+
+	}// Fin manejador_boton_GuardarListaCSVEnBBDD()
+
+	/** Carga los valores del archivo CSV seleccionado con JFileChooser en la lista situada en su mismo panel.
+	 * Para esto invoca el método CSV.extraerCSV pasandole el objeto File del archivo seleccionado , 
+	 * el caracter de separacion establecido en el ComBox pertinente y una referencia al propio JFrame para que 
+	 * el citado metodo reporte en el los posibles fallos al cargar el CSV. Por ultimo invoca el metodo Utils.cargarListaDePerfilesEnJList()
+	 * para cargar en la lista situada en su mismo panel los perfiles extraidos del CSV en una List. **/
+	private void manejador_boton_CargarCSV() {
 
 		JFileChooser selectorArchivos = new JFileChooser();
+		selectorArchivos.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		FileNameExtensionFilter filtroDeArchivo = new FileNameExtensionFilter("Solo CSVs", "csv");
 		selectorArchivos.setFileFilter(filtroDeArchivo);
 
-		int opcionElegida = selectorArchivos.showSaveDialog(null);
-		// Si la opcion elegida fue Guardar.
+		int opcionElegida = selectorArchivos.showOpenDialog(this);
 		if (!(opcionElegida == JFileChooser.APPROVE_OPTION)) {
 			return;
 		}
 
-		File archivoParaGuardar = selectorArchivos.getSelectedFile();
-		File archivoParaGuardarConExtension = new File(archivoParaGuardar.getAbsolutePath() + ".csv");
+		File csv_File = selectorArchivos.getSelectedFile();
+		// por si no se selecciona nada con JFileChooser
+		if (csv_File == null) {
+			return;
+		}
 
-		List<Perfil> listaPerfiles = Utils.crearListaDePerfilesDeJList(modelo_jList_PerfilesCrearCSV);
+		List<Perfil> perfiles_List = CSV.extraerCSV(csv_File, (Character) comboBox.getSelectedItem(), this);
 
-		CSV.crearCSV(listaPerfiles, archivoParaGuardarConExtension, (Character) comboBox_CrearCSV.getSelectedItem(),
-				this);
+		Utils.cargarListaDePerfilesEnJList(perfiles_List, modelo_jList_PerfilesCSV);
 
 	}
-
-	/**
-	 * cargarListaPerfiles():Refresca la lista de perfiles. Carga todos los
-	 * registros de la tabla "perfiles" (devueltos por el metodo
-	 * accesoBBDD.obtenerTodosLosPerfiles()) en la JList jList_Perfiles despues de
-	 * limpiarla.
-	 */
-	private void recargar_jList_PerfilesBBDD() {
-
-		List<Perfil> list_Perfiles = accesoBBDD.obtenerTodosLosPerfiles();
-		modelo_jList_PerfilesBBDD.clear();
-		Utils.cargarListaDePerfilesEnJList(list_Perfiles, modelo_jList_PerfilesBBDD);
-
-	}//// Fin cargarListaPerfiles()
 
 	/** Rellena los campos superiores con los valores del perfil selecionado. **/
 	private void manejadorSeleccion_jList_PerfilesCSV() {
@@ -758,6 +761,7 @@ public class CrearCSVDedeBBDD extends JFrame {
 		if (perfilSeleccionadoCSV == null) {
 			return;
 		} // Si no puede dar error
+			// perfilSeleccionadoJListBBDDCopia = perfilSeleccionado.crearCopia() ;
 
 		textField_nombre_Inf.setText(perfilSeleccionadoCSV.getNombre());
 		comboBox_Rol_Inf.setSelectedItem(perfilSeleccionadoCSV.getRol());
@@ -776,14 +780,77 @@ public class CrearCSVDedeBBDD extends JFrame {
 
 		textField_nombre_Sup.setText(perfilSeleccionadoJListBBDDCopia.getNombre());
 		comboBox_Rol_Sup.setSelectedItem(perfilSeleccionadoJListBBDDCopia.getRol());
-
 		textField_departamento_Sup.setText(perfilSeleccionadoJListBBDDCopia.getDepartamento());
 		textField_eMail_Sup.setText(perfilSeleccionadoJListBBDDCopia.getEmail());
 		textField_ContraseñaCifrada_Sup.setText(perfilSeleccionadoJListBBDDCopia.getContraseñaCifrada());
 	}
 
+	/**
+	 * manejador_Boton_Actualizar_Perfil(): Actualiza en la BBDD los datos del
+	 * perfil seleccionado en la JList cargada de la BBDD
+	 **/
+	@SuppressWarnings("deprecation")
+	private void manejador_Boton_ActualizarPerfil() {
+
+		if (perfilSeleccionadoJListBBDDCopia == null) {
+			return;
+		} // Si no puede dar error
+		System.out.println("--perfilSeleccionadoJListBBDDCopia : " + perfilSeleccionadoJListBBDDCopia);
+
+		perfilSeleccionadoJListBBDDCopia.setNombre(textField_nombre_Sup.getText());
+		perfilSeleccionadoJListBBDDCopia.setRol((String) comboBox_Rol_Sup.getSelectedItem());
+		perfilSeleccionadoJListBBDDCopia.setDepartamento(textField_departamento_Sup.getText());
+		perfilSeleccionadoJListBBDDCopia.setEmail(textField_eMail_Sup.getText());
+		perfilSeleccionadoJListBBDDCopia.setContraseñaSinCifrar(textField_ContraseñaCifrada_Sup.getText());
+
+		boolean perfilCorrecto = Utils.limtiarYComprobarPerfilSinContraseña(perfilSeleccionadoJListBBDDCopia, this);
+		if (!perfilCorrecto) {
+			return;
+		}
+		boolean exitoActualizar = accesoBBDD.actualizarPerfil(perfilSeleccionadoJListBBDDCopia, this);
+		if (exitoActualizar) {
+			recargar_jList_PerfilesBBDD();
+			limpiarCampos_Superiores();
+		}
+	} // Fin manejador_Boton_Actualizar_Perfil()
+
+	/**
+	 * borrarPerfil(): Borra , de la base de datos, el perfil seleccionado en la JList cargada de desde la
+	 * BBDD segun el valor del atributo id. Reporta el fallo si no se consigue borrar por alguna excepcion SQL.
+	 */
+
+	private void manejador_BotonBorrarPerfil() {
+
+		if (perfilSeleccionadoJListBBDDCopia == null) {
+			return;
+		} // Si no puede dar error cuando se ha recargado la lista.
+
+		UUID id = perfilSeleccionadoJListBBDDCopia.getId();
+
+		accesoBBDD.borrarPerfil(id, this);
+		System.out.println("--Borrado usuario con ID: " + id);
+
+		recargar_jList_PerfilesBBDD();
+		// limpiarCampos_Superiores();
+	}
+
 	// Fin manejadores de eventos
 	// -------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * cargarListaPerfiles():Refresca la lista de perfiles. Carga todos los
+	 * registros de la tabla "perfiles" (devueltos por el metodo
+	 * accesoBBDD.obtenerTodosLosPerfiles()) en la JList jList_Perfiles despues de
+	 * limpiarla.
+	 */
+	private void recargar_jList_PerfilesBBDD() {
+
+		List<Perfil> list_Perfiles = accesoBBDD.obtenerTodosLosPerfiles();
+		modelo_jList_PerfilesBBDD.clear();
+		Utils.cargarListaDePerfilesEnJList(list_Perfiles, modelo_jList_PerfilesBBDD);
+		limpiarCampos_Superiores();
+
+	}//// Fin cargarListaPerfiles()
 
 	/** Limpia los campos de texto del panel superior */
 	private void limpiarCampos_Superiores() {
@@ -792,7 +859,7 @@ public class CrearCSVDedeBBDD extends JFrame {
 		comboBox_Rol_Sup.setSelectedItem(Roles.roles[0]);
 		textField_departamento_Sup.setText("");
 		textField_eMail_Sup.setText("");
-		textField_ContraseñaCifrada_Sup.setText("");
+
 	}/// Fin limpiarCampos_Superiores ()
 
 	/** Limpia los campos de texto del panel inferior */
@@ -803,5 +870,6 @@ public class CrearCSVDedeBBDD extends JFrame {
 		textField_departamento_Inf.setText("");
 		textField_eMail_Inf.setText("");
 		textField_ContraseñaCifrada_Inf.setText("");
+
 	}/// Fin limpiarCampos_Inferiores
 }////// Fin de clase----------------------
