@@ -35,8 +35,9 @@ const getStatusBadge = (estado: string) => {
 };
 
 export const Tickets = () => {
-  const { session } = useSupabase();
+  const { session, perfil } = useSupabase();
   const usuarioId = session?.user?.id;
+  const isReadOnly = perfil?.rol === 'admin' && perfil?.departamento === 'Dirección';
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -164,12 +165,14 @@ export const Tickets = () => {
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Gestión de Tickets</h1>
-        <Link 
-          to="/tickets/new"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm inline-block"
-        >
-          Nuevo Ticket
-        </Link>
+        {!isReadOnly && (
+          <Link 
+            to="/tickets/new"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm inline-block"
+          >
+            Nuevo Ticket
+          </Link>
+        )}
       </div>
 
       {/* Vistas Rápidas (Tabs / Colas de Trabajo) */}
@@ -195,7 +198,7 @@ export const Tickets = () => {
       </div>
 
       {/* Barra de Filtros */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-8 transition-colors">
         <div className="flex flex-col lg:flex-row gap-4 items-end lg:items-center">
           {/* Búsqueda por texto */}
           <div className="flex-1 w-full relative">
@@ -209,7 +212,7 @@ export const Tickets = () => {
               placeholder="Buscar por título o descripción..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm sm:text-sm"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
             />
           </div>
 
@@ -218,7 +221,7 @@ export const Tickets = () => {
             <select
               value={filterEstado}
               onChange={(e) => setFilterEstado(e.target.value)}
-              className="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm sm:text-sm"
+              className="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
             >
               <option value="todos">Todos los estados</option>
               <option value="pendiente">Pendiente</option>
@@ -232,7 +235,7 @@ export const Tickets = () => {
             <select
               value={filterPrioridad}
               onChange={(e) => setFilterPrioridad(e.target.value)}
-              className="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm sm:text-sm"
+              className="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
             >
               <option value="todas">Todas las prioridades</option>
               <option value="baja">Baja</option>
@@ -256,7 +259,7 @@ export const Tickets = () => {
                 <div className={`block w-10 h-6 rounded-full transition-colors ${showOnlyMine ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
                 <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${showOnlyMine ? 'transform translate-x-4' : ''}`}></div>
               </div>
-              <span className="ml-3 text-sm font-medium text-gray-700">Mis asignados</span>
+              <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Mis asignados</span>
             </label>
           </div>
         </div>

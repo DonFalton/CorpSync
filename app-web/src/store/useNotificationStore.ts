@@ -2,10 +2,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export interface NotificationItem {
-  id: string;
+  id: number;
   titulo: string;
   mensaje: string;
-  ticket_id: number;
+  ticket_id: number | null;
+  tipo?: string;
   fecha: string;
   leida: boolean;
 }
@@ -13,9 +14,9 @@ export interface NotificationItem {
 interface NotificationStore {
   notificaciones: NotificationItem[];
   unreadCount: number;
-  addNotification: (notification: Omit<NotificationItem, 'id' | 'fecha' | 'leida'>) => void;
+  addNotification: (notification: NotificationItem) => void;
   markAllAsRead: () => void;
-  clearAll: () => void;
+  clearNotifications: () => void;
 }
 
 export const useNotificationStore = create<NotificationStore>()(
@@ -25,14 +26,14 @@ export const useNotificationStore = create<NotificationStore>()(
       unreadCount: 0,
       
       addNotification: (notif) => set((state) => {
-        const newNotif: NotificationItem = {
-          ...notif,
-          id: crypto.randomUUID(),
-          fecha: new Date().toISOString(),
-          leida: false,
-        };
-        
-        const newNotificaciones = [newNotif, ...state.notificaciones].slice(0, 10);
+        // Strict deduplication by ID
+        const isDuplicate = state.notificaciones.some(n => n.id === notif.id);
+
+        if (isDuplicate) {
+          return state; // Do nothing if it already exists
+        }
+
+        const newNotificaciones = [notif, ...state.notificaciones].slice(0, 10);
         
         return {
           notificaciones: newNotificaciones,
@@ -45,7 +46,7 @@ export const useNotificationStore = create<NotificationStore>()(
         notificaciones: state.notificaciones.map(n => ({ ...n, leida: true }))
       })),
       
-      clearAll: () => set({
+      clearNotifications: () => set({
         notificaciones: [],
         unreadCount: 0
       })

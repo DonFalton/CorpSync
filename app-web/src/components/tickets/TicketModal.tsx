@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TicketWithRelations } from '../../hooks/useTickets';
 import { useUpdateTicket } from '../../hooks/useUpdateTicket';
 import { useTecnicos } from '../../hooks/useTecnicos';
+import { useSupabase } from '../../app/providers/SupabaseProvider';
 import toast from 'react-hot-toast';
 
 interface TicketModalProps {
@@ -10,6 +11,7 @@ interface TicketModalProps {
 }
 
 export const TicketModal = ({ ticket, onClose }: TicketModalProps) => {
+  const { session, perfil } = useSupabase();
   const updateTicketMutation = useUpdateTicket();
   const { data: tecnicos } = useTecnicos();
   
@@ -17,6 +19,28 @@ export const TicketModal = ({ ticket, onClose }: TicketModalProps) => {
   const [prioridad, setPrioridad] = useState(ticket.prioridad || 'por_asignar');
   const [categoria, setCategoria] = useState(ticket.categoria || '');
   const [tecnicoId, setTecnicoId] = useState(ticket.tecnico_id || '');
+
+  // Lógica RBAC para la UI
+  const isDireccion = perfil?.rol === 'admin' && perfil?.departamento === 'Dirección';
+  const isSoporteNivel1 = perfil?.rol === 'tecnico' && perfil?.departamento === 'Informática';
+  const isJefeTecnicos = perfil?.rol === 'admin' && perfil?.departamento === 'Informática';
+
+  const isReadOnly = isDireccion;
+  // Soporte Nivel 1 no puede robar/reasignar tickets que ya tienen otro dueño
+  const isReassignBlocked = !!(isSoporteNivel1 && ticket.tecnico_id && ticket.tecnico_id !== session?.user?.id);
+  const disableTecnicoSelect = isReadOnly || isReassignBlocked;
+
+  // Lógica para el desplegable de técnicos
+  let assignableTecnicos = tecnicos || [];
+  if (isSoporteNivel1) {
+    assignableTecnicos = assignableTecnicos.filter(t => t.id === session?.user?.id);
+  } else if (isJefeTecnicos && perfil) {
+    // El Jefe es admin, por lo que no viene en 'tecnicos' (que filtra rol='tecnico'). Lo añadimos.
+    assignableTecnicos = [
+      { id: perfil.id, nombre: perfil.nombre, rol: perfil.rol },
+      ...assignableTecnicos
+    ];
+  }
 
   const handleSave = () => {
     updateTicketMutation.mutate(
@@ -68,7 +92,8 @@ export const TicketModal = ({ ticket, onClose }: TicketModalProps) => {
               <select 
                 value={estado} 
                 onChange={(e) => setEstado(e.target.value)}
-                className="w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                disabled={isReadOnly}
+                className="w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:bg-gray-100"
               >
                 <option value="pendiente">Pendiente</option>
                 <option value="en_proceso">En proceso</option>
@@ -81,7 +106,8 @@ export const TicketModal = ({ ticket, onClose }: TicketModalProps) => {
               <select 
                 value={prioridad} 
                 onChange={(e) => setPrioridad(e.target.value)}
-                className="w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                disabled={isReadOnly}
+                className="w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:bg-gray-100"
               >
                 <option value="por_asignar">Sin prioridad</option>
                 <option value="baja">Baja</option>
@@ -93,13 +119,17 @@ export const TicketModal = ({ ticket, onClose }: TicketModalProps) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-              <input 
-                type="text"
+              <select 
                 value={categoria} 
                 onChange={(e) => setCategoria(e.target.value)}
-                className="w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                placeholder="Ej. Hardware, Software..."
-              />
+                disabled={isReadOnly}
+                className="w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:bg-gray-100 text-sm"
+              >
+                <option value="Hardware">Hardware</option>
+                <option value="Software">Software</option>
+                <option value="Redes">Redes</option>
+                <option value="Otros">Otros</option>
+              </select>
             </div>
           </div>
 
@@ -109,10 +139,12 @@ export const TicketModal = ({ ticket, onClose }: TicketModalProps) => {
               <select 
                 value={tecnicoId}
                 onChange={(e) => setTecnicoId(e.target.value)}
-                className="rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                disabled={disableTecnicoSelect}
+                className="rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm disabled:opacity-60 disabled:bg-gray-100"
+                title={isReassignBlocked ? "No tienes permisos para reasignar tickets de otro técnico" : undefined}
               >
                 <option value="">Sin asignar</option>
-                {tecnicos?.map(t => (
+                {assignableTecnicos.map(t => (
                   <option key={t.id} value={t.id}>{t.nombre}</option>
                 ))}
               </select>
@@ -122,15 +154,17 @@ export const TicketModal = ({ ticket, onClose }: TicketModalProps) => {
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
               >
-                Cancelar
+                {isReadOnly ? 'Cerrar' : 'Cancelar'}
               </button>
-              <button 
-                onClick={handleSave}
-                disabled={updateTicketMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
-              >
-                {updateTicketMutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
-              </button>
+              {!isReadOnly && (
+                <button 
+                  onClick={handleSave}
+                  disabled={updateTicketMutation.isPending}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                >
+                  {updateTicketMutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              )}
             </div>
           </div>
         </div>

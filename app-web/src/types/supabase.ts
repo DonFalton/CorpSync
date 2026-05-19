@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      notificaciones: {
+        Row: {
+          fecha: string
+          id: number
+          leida: boolean
+          mensaje: string
+          perfil_id: string
+          ticket_id: number | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          fecha?: string
+          id?: number
+          leida?: boolean
+          mensaje: string
+          perfil_id: string
+          ticket_id?: number | null
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          fecha?: string
+          id?: number
+          leida?: boolean
+          mensaje?: string
+          perfil_id?: string
+          ticket_id?: number | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificaciones_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificaciones_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfiles: {
         Row: {
           creado_en: string
@@ -21,6 +69,7 @@ export type Database = {
           email: string
           id: string
           nombre: string
+          password: string | null
           rol: string
         }
         Insert: {
@@ -29,6 +78,7 @@ export type Database = {
           email?: string
           id?: string
           nombre: string
+          password?: string | null
           rol: string
         }
         Update: {
@@ -37,6 +87,7 @@ export type Database = {
           email?: string
           id?: string
           nombre?: string
+          password?: string | null
           rol?: string
         }
         Relationships: []
@@ -103,7 +154,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_my_user: {
+        Args: { p_user_id: string }
+        Returns: unknown[]
+        SetofOptions: {
+          from: "*"
+          to: "users"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      insertar_notificaciones_seguras: {
+        Args: { payload: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

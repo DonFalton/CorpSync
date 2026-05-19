@@ -20,6 +20,19 @@ const queryClient = new QueryClient({
   },
 });
 
+import { EmployeeDashboard } from './pages/EmployeeDashboard';
+import { Navigate } from 'react-router-dom';
+import { useSupabase } from './app/providers/SupabaseProvider';
+
+const IndexRedirect = () => {
+  const { perfil } = useSupabase();
+  
+  if (perfil?.rol === 'empleado' || (perfil?.rol === 'admin' && perfil?.departamento === 'Recursos Humanos')) {
+    return <Navigate to="/mis-tickets" replace />;
+  }
+  return <Navigate to="/dashboard" replace />;
+};
+
 const router = createBrowserRouter([
   {
     path: '/login',
@@ -29,10 +42,18 @@ const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
+        path: '/',
+        element: <IndexRedirect />,
+      },
+      {
+        path: '/mis-tickets',
+        element: <EmployeeDashboard />,
+      },
+      {
         element: <MainLayout />,
         children: [
           {
-            path: '/',
+            path: '/dashboard',
             element: <Dashboard />,
           },
           {

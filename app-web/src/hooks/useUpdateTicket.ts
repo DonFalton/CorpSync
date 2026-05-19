@@ -9,6 +9,14 @@ export const useUpdateTicket = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updateData }: TicketUpdate & { id: number }) => {
+      // 1. Obtener estado anterior para comparar
+      const { data: oldTicket } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      // 2. Realizar actualización
       const { data, error } = await supabase
         .from('tickets')
         .update(updateData)
@@ -19,6 +27,72 @@ export const useUpdateTicket = () => {
       if (error) {
         throw new Error(error.message);
       }
+
+      // 3. Evaluar cambios e insertar notificaciones
+      if (oldTicket && data) {
+        try {
+          console.log('[NOTIF-UPDATE] 1. Ticket actualizado con éxito. Evaluando cambios de estado y asignación para ticket:', data.id);
+          const newNotifications = [];
+          
+          // a) Cambio de estado -> notificar al creador (empleado_id)
+          if (oldTicket.estado !== data.estado) {
+            newNotifications.push({
+              perfil_id: data.empleado_id,
+              ticket_id: data.id,
+              titulo: 'Cambio de Estado',
+              mensaje: `Tu ticket "${data.titulo}" ha cambiado a estado: ${data.estado}`,
+              tipo: 'cambio_estado'
+            });
+          }
+          
+          // b) Nueva Asignación -> notificar al tecnico asignado
+          if (data.tecnico_id && oldTicket.tecnico_id !== data.tecnico_id) {
+            newNotifications.push({
+              perfil_id: data.tecnico_id,
+              ticket_id: data.id,
+              titulo: 'Nueva Asignación',
+              mensaje: `Se te ha asignado el ticket: ${data.titulo}`,
+              tipo: 'nueva_asignacion'
+            });
+          }
+          
+          // c) Ticket Resuelto -> notificar al Jefe Técnico
+          if (data.estado === 'resuelto' && oldTicket.estado !== 'resuelto') {
+            console.log('[NOTIF-UPDATE] 2. Ticket resuelto, buscando admins de Informática...');
+            const { data: admins, error: errorAdmins } = await supabase
+              .from('perfiles')
+              .select('id')
+              .eq('rol', 'admin')
+              .eq('departamento', 'Informática');
+              
+            console.log('[NOTIF-UPDATE] 3. Resultado de admins encontrados:', admins, errorAdmins);
+            
+            if (admins) {
+              admins.forEach(admin => {
+                newNotifications.push({
+                  perfil_id: admin.id,
+                  ticket_id: data.id,
+                  titulo: 'Ticket Resuelto',
+                  mensaje: `El ticket "${data.titulo}" ha sido marcado como resuelto.`,
+                  tipo: 'ticket_resuelto'
+                });
+              });
+            }
+          }
+          
+          // Insertar en lote si hay notificaciones generadas
+          if (newNotifications.length > 0) {
+            console.log('[NOTIF-UPDATE] 4. Payload construido para el RPC:', newNotifications);
+            const { data: rpcData, error: rpcError } = await supabase.rpc('insertar_notificaciones_seguras', { payload: newNotifications });
+            console.log('[NOTIF-UPDATE] 5. Respuesta del RPC:', { rpcData, rpcError });
+          } else {
+            console.log('[NOTIF-UPDATE] 4. No hay notificaciones nuevas generadas en esta actualización.');
+          }
+        } catch (err) {
+          console.error('[NOTIF-UPDATE] EXCEPCIÓN FATAL en useUpdateTicket:', err);
+        }
+      }
+
       return data;
     },
     onSuccess: () => {

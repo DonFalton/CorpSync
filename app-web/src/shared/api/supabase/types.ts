@@ -43,6 +43,7 @@ export type Database = {
         Row: {
           creado_en: string
           departamento: string | null
+          email: string
           id: string
           nombre: string
           rol: string
@@ -50,6 +51,7 @@ export type Database = {
         Insert: {
           creado_en?: string
           departamento?: string | null
+          email?: string
           id: string
           nombre: string
           rol: string
@@ -57,6 +59,7 @@ export type Database = {
         Update: {
           creado_en?: string
           departamento?: string | null
+          email?: string
           id?: string
           nombre?: string
           rol?: string
@@ -120,12 +123,65 @@ export type Database = {
           },
         ]
       }
+      notificaciones: {
+        Row: {
+          id: number
+          perfil_id: string
+          ticket_id: number | null
+          titulo: string
+          mensaje: string
+          tipo: string
+          leida: boolean
+          fecha: string
+        }
+        Insert: {
+          id?: number
+          perfil_id: string
+          ticket_id?: number | null
+          titulo: string
+          mensaje: string
+          tipo: string
+          leida?: boolean
+          fecha?: string
+        }
+        Update: {
+          id?: number
+          perfil_id?: string
+          ticket_id?: number | null
+          titulo?: string
+          mensaje?: string
+          tipo?: string
+          leida?: boolean
+          fecha?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificaciones_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificaciones_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      insertar_notificaciones_seguras: {
+        Args: {
+          payload: Json
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

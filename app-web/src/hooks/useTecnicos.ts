@@ -11,10 +11,11 @@ export const useTecnicos = () => {
   return useQuery<Tecnico[], Error>({
     queryKey: ['tecnicos'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('perfiles')
-        .select('id, nombre, rol')
-        .eq('rol', 'tecnico');
+        const { data, error } = await supabase
+          .from('perfiles')
+          .select('id, nombre, rol')
+          .eq('rol', 'tecnico')
+          .eq('departamento', 'Informática');
       
       if (error) throw error;
       return data as Tecnico[];

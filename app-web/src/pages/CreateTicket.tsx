@@ -1,3 +1,4 @@
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '../app/providers/SupabaseProvider';
@@ -8,8 +9,16 @@ type TicketFormData = Omit<CreateTicketInput, 'empleado_id' | 'creado_en' | 'act
 
 export const CreateTicket = () => {
   const navigate = useNavigate();
-  const { session } = useSupabase();
+  const { session, perfil } = useSupabase();
   const { mutateAsync, isPending, isError, error } = useCreateTicket();
+
+  const isReadOnly = perfil?.rol === 'admin' && perfil?.departamento === 'Dirección';
+
+  React.useEffect(() => {
+    if (isReadOnly) {
+      navigate('/tickets', { replace: true });
+    }
+  }, [isReadOnly, navigate]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<TicketFormData>({
     defaultValues: {
@@ -83,13 +92,16 @@ export const CreateTicket = () => {
               <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-1">
                 Categoría
               </label>
-              <input
+              <select
                 id="categoria"
-                type="text"
                 {...register('categoria')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                placeholder="Ej. Software, Hardware, Redes"
-              />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
+              >
+                <option value="Hardware">Hardware</option>
+                <option value="Software">Software</option>
+                <option value="Redes">Redes</option>
+                <option value="Otros">Otros</option>
+              </select>
             </div>
 
             <div>

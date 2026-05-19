@@ -8,22 +8,22 @@ import { useNotificationStore } from '../../store/useNotificationStore';
 
 export const MainLayout = () => {
   const { isSidebarOpen, toggleSidebar, theme, setTheme } = useUIStore();
-  const { session } = useSupabase();
+  const { session, perfil, isLoading } = useSupabase();
   const navigate = useNavigate();
   
-  const { notificaciones, unreadCount, markAllAsRead } = useNotificationStore();
+  const { notificaciones, unreadCount, markAllAsRead, clearNotifications } = useNotificationStore();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   useTicketNotifications(session?.user?.id);
 
-  // RBAC: Expulsar usuarios sin permisos gerenciales/técnicos
+  // RBAC gestionado a nivel de ruta (Protección del Layout Técnico)
   useEffect(() => {
-    const rol = session?.user?.user_metadata?.rol;
-    if (rol === 'empleado') {
-      // Bloquear acceso al módulo ITSM a empleados base
-      supabase.auth.signOut().then(() => navigate('/login'));
+    if (!isLoading && perfil) {
+      if (perfil.rol === 'empleado' || (perfil.rol === 'admin' && perfil.departamento === 'Recursos Humanos')) {
+        navigate('/mis-tickets', { replace: true });
+      }
     }
-  }, [session, navigate]);
+  }, [isLoading, perfil, navigate]);
 
   // Inicializar Dark Mode
   useEffect(() => {
@@ -50,17 +50,29 @@ export const MainLayout = () => {
   };
 
   const handleLogout = async () => {
+    clearNotifications();
     await supabase.auth.signOut();
   };
 
-  const handleNotificationClick = (ticketId: number) => {
+  const handleNotificationClick = (ticketId: number | null) => {
     setIsNotifOpen(false);
-    navigate('/tickets', { state: { openTicketId: ticketId } });
+    if (ticketId) {
+      navigate('/tickets', { state: { openTicketId: ticketId } });
+    }
   };
 
-  const toggleNotifications = () => {
+  const toggleNotifications = async () => {
     if (!isNotifOpen) {
       markAllAsRead();
+      if (session?.user?.id) {
+        try {
+          await supabase.from('notificaciones')
+            .update({ leida: true })
+            .eq('perfil_id', session.user.id);
+        } catch (err) {
+          console.error('Error updating notifications in DB:', err);
+        }
+      }
     }
     setIsNotifOpen(!isNotifOpen);
   };
@@ -190,7 +202,7 @@ export const MainLayout = () => {
             {/* Usuario */}
             <div className="flex items-center gap-3 border-l border-gray-200 dark:border-gray-700 pl-6">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {session?.user?.user_metadata?.nombre || session?.user?.email || 'Usuario'}
+                {perfil?.nombre ? perfil.nombre.split(' ')[0] : 'Usuario'}
               </span>
               <button
                 onClick={handleLogout}
