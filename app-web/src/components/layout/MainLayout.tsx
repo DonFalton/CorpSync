@@ -5,16 +5,18 @@ import { supabase } from '../../shared/api/supabase/client';
 import { useSupabase } from '../../app/providers/SupabaseProvider';
 import { useTicketNotifications } from '../../hooks/useTicketNotifications';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import { useTicketsRealtime } from '../../hooks/useTicketsRealtime';
 
 export const MainLayout = () => {
   const { isSidebarOpen, toggleSidebar, theme, setTheme } = useUIStore();
   const { session, perfil, isLoading } = useSupabase();
   const navigate = useNavigate();
-  
+
   const { notificaciones, unreadCount, markAllAsRead, clearNotifications } = useNotificationStore();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   useTicketNotifications(session?.user?.id);
+  useTicketsRealtime();
 
   // RBAC gestionado a nivel de ruta (Protección del Layout Técnico)
   useEffect(() => {
@@ -81,9 +83,8 @@ export const MainLayout = () => {
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden transition-colors duration-200">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 dark:bg-gray-900 border-r border-transparent dark:border-gray-800 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 dark:bg-gray-900 border-r border-transparent dark:border-gray-800 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex items-center justify-between h-16 px-6 bg-gray-900 dark:bg-gray-950 border-b border-transparent dark:border-gray-800">
           <span className="text-xl font-bold">CorpSync ITSM</span>
@@ -97,7 +98,7 @@ export const MainLayout = () => {
             </svg>
           </button>
         </div>
-        
+
         <div className="flex flex-col flex-1 h-[calc(100vh-4rem)] justify-between">
           <nav className="p-4 space-y-2">
             <Link
@@ -115,9 +116,9 @@ export const MainLayout = () => {
               Tickets
             </Link>
           </nav>
-          
+
           <div className="p-4 border-t border-gray-700">
-            <button 
+            <button
               onClick={toggleTheme}
               className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors"
             >
@@ -154,7 +155,7 @@ export const MainLayout = () => {
           <div className="flex items-center gap-6">
             {/* Notificaciones */}
             <div className="relative">
-              <button 
+              <button
                 onClick={toggleNotifications}
                 className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none transition-colors"
               >
@@ -181,7 +182,7 @@ export const MainLayout = () => {
                       </div>
                     ) : (
                       notificaciones.map(notif => (
-                        <div 
+                        <div
                           key={notif.id}
                           onClick={() => handleNotificationClick(notif.ticket_id)}
                           className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${!notif.leida ? 'bg-blue-50 dark:bg-gray-700/50' : ''}`}
@@ -219,7 +220,7 @@ export const MainLayout = () => {
           <Outlet />
         </main>
       </div>
-      
+
       {/* Overlay for mobile sidebar */}
       {isSidebarOpen && (
         <div
