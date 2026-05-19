@@ -3,22 +3,23 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Resp
 import { useNavigate } from 'react-router-dom';
 
 export const Dashboard = () => {
+  // Suscripción a la fuente de verdad de tickets
   const { data: tickets, isLoading, isError } = useTickets();
   const navigate = useNavigate();
 
-  // Estados derivados numéricos
+  // Cálculo de KPIs globales para indicadores de cabecera
   const totalTickets = tickets?.length || 0;
   const ticketsNuevos = tickets?.filter((t) => t.estado.toLowerCase() === 'pendiente').length || 0;
   const ticketsEnProceso = tickets?.filter((t) => t.estado.toLowerCase() === 'en_proceso').length || 0;
   const prioridadAlta = tickets?.filter((t) => String(t.prioridad) === 'alta' || String(t.prioridad) === 'critica').length || 0;
 
-  // Procesamiento de datos para Gráficos
+  // Transformación de la colección de tickets para Gráfica de Tarta (Estados)
   const countPorEstado = tickets?.reduce((acc: Record<string, number>, ticket) => {
     const estado = ticket.estado;
     acc[estado] = (acc[estado] || 0) + 1;
     return acc;
   }, {});
-  
+
   const ticketsPorEstado = countPorEstado ? Object.entries(countPorEstado).map(([name, value]) => ({
     name: name.replace('_', ' ').toUpperCase(),
     originalName: name,
@@ -31,6 +32,7 @@ export const Dashboard = () => {
     'RESUELTO': '#16a34a',
   };
 
+  // Transformación de la colección de tickets para Gráfica de Barras (Categorías)
   const countPorCategoria = tickets?.reduce((acc: Record<string, number>, ticket) => {
     const cat = ticket.categoria || 'Sin Categorizar';
     acc[cat] = (acc[cat] || 0) + 1;
@@ -42,6 +44,7 @@ export const Dashboard = () => {
     total
   })) : [];
 
+  // Generación y descarga del reporte de tickets en formato CSV (UTF-8)
   const handleExportCSV = () => {
     if (!tickets || tickets.length === 0) return;
 
@@ -71,14 +74,14 @@ export const Dashboard = () => {
     // Añadimos BOM para que Excel detecte UTF-8 correctamente
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     const dateStr = new Date().toISOString().split('T')[0];
     link.href = url;
     link.setAttribute('download', `reporte_tickets_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
-    
+
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
@@ -114,7 +117,7 @@ export const Dashboard = () => {
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard General</h1>
-        
+
         {tickets && tickets.length > 0 && (
           <button
             onClick={handleExportCSV}
@@ -130,7 +133,7 @@ export const Dashboard = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Metric 1 */}
-        <div 
+        <div
           onClick={() => navigate('/tickets', { state: { activeTab: 'todos', filterEstado: 'todos' } })}
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transform hover:-translate-y-1 transition-all"
         >
@@ -148,7 +151,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Metric 2 */}
-        <div 
+        <div
           onClick={() => navigate('/tickets', { state: { activeTab: 'todos', filterEstado: 'pendiente' } })}
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transform hover:-translate-y-1 transition-all"
         >
@@ -166,7 +169,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Metric 3 */}
-        <div 
+        <div
           onClick={() => navigate('/tickets', { state: { activeTab: 'todos', filterEstado: 'en_proceso' } })}
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transform hover:-translate-y-1 transition-all"
         >
@@ -184,7 +187,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Metric 4 */}
-        <div 
+        <div
           onClick={() => navigate('/tickets', { state: { activeTab: 'urgentes', filterEstado: 'todos' } })}
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transform hover:-translate-y-1 transition-all"
         >
@@ -223,16 +226,16 @@ export const Dashboard = () => {
                     dataKey="value"
                   >
                     {ticketsPorEstado.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={COLORS[entry.name] || '#3b82f6'} 
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[entry.name] || '#3b82f6'}
                         onClick={() => navigate('/tickets', { state: { activeTab: 'todos', filterEstado: entry.originalName } })}
                         className="cursor-pointer hover:opacity-80 transition-opacity"
                         style={{ outline: 'none' }}
                       />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                   />
                   <Legend />
@@ -249,14 +252,14 @@ export const Dashboard = () => {
                 <BarChart data={ticketsPorCategoria} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                   <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: '#f3f4f6' }}
                     contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                   />
-                  <Bar 
-                    dataKey="total" 
-                    fill="#3b82f6" 
-                    radius={[4, 4, 0, 0]} 
+                  <Bar
+                    dataKey="total"
+                    fill="#3b82f6"
+                    radius={[4, 4, 0, 0]}
                     onClick={(data) => navigate('/tickets', { state: { activeTab: 'todos', searchTerm: data.name === 'Sin Categorizar' ? '' : data.name } })}
                     className="cursor-pointer hover:opacity-80 transition-opacity"
                   />
@@ -266,7 +269,7 @@ export const Dashboard = () => {
           </div>
         </div>
       )}
-      
+
       {/* Últimos Tickets Previsualización */}
       <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Actividad Reciente</h2>
@@ -275,8 +278,8 @@ export const Dashboard = () => {
         ) : (
           <div className="space-y-2">
             {tickets.slice(0, 3).map(ticket => (
-              <div 
-                key={ticket.id} 
+              <div
+                key={ticket.id}
                 onClick={() => navigate('/tickets', { state: { openTicketId: ticket.id } })}
                 className="flex items-center justify-between p-3 border border-transparent hover:border-gray-200 hover:bg-gray-50 hover:shadow-sm rounded-lg transition-all cursor-pointer"
               >

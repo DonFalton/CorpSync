@@ -1,7 +1,7 @@
--- 1. Asegurar que la extensión asíncrona pg_net está habilitada
+-- Habilitación de extensión de red para llamadas HTTP asíncronas desde Postgres
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 
--- 2. Función PL/pgSQL para disparar el Webhook de forma segura y no bloqueante
+-- Invocación asíncrona de Edge Function aislada del hilo de transacción principal
 CREATE OR REPLACE FUNCTION public.trigger_gemini_triage()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -12,18 +12,17 @@ DECLARE
   edge_function_url text := 'https://mofuozleqotjlsavxfkv.supabase.co/functions/v1/gemini-triage';
   webhook_secret text;
 BEGIN
-  -- Extraemos el secreto del webhook configurado de forma segura en Postgres
-  -- Si no está configurado, usamos un fallback vacío para no romper la transacción
+  -- Extracción de firma criptográfica local para validación de origen en Deno
   webhook_secret := current_setting('app.settings.webhook_secret', true);
 
-  -- Payload mínimo requerido por la IA
+  -- Construcción de DTO mínimo para procesamiento de lenguaje natural
   request_body := jsonb_build_object(
     'ticket_id', NEW.id,
     'titulo', NEW.titulo,
     'descripcion', NEW.descripcion
   );
 
-  -- net.http_post delega la llamada a un background worker (100% asíncrono)
+  -- Transmisión de carga útil vía Background Worker (Fire and Forget)
   PERFORM net.http_post(
     url := edge_function_url,
     body := request_body,
@@ -37,7 +36,7 @@ BEGIN
 END;
 $$;
 
--- 3. Crear el trigger acoplado a la tabla tickets
+-- Acoplamiento de motor de IA al ciclo de vida de inserción de incidencias
 DROP TRIGGER IF EXISTS on_ticket_created_triage ON public.tickets;
 
 CREATE TRIGGER on_ticket_created_triage

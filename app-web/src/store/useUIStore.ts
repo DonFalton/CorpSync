@@ -7,6 +7,7 @@ export interface UIState {
   setTheme: (theme: 'light' | 'dark') => void;
 }
 
+// Gestor de estado global efímero para preferencias de interfaz (Sidebar/Theme)
 export const useUIStore = create<UIState>((set) => ({
   isSidebarOpen: false,
   theme: 'light',

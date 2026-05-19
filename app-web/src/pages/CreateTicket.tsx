@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '../app/providers/SupabaseProvider';
 import { useCreateTicket, CreateTicketInput } from '../hooks/useCreateTicket';
 
-// Interface para el formulario omitiendo campos gestionados internamente
+// DTO de entrada derivado (Omit) para exclusión de campos de sistema autogestionados
 type TicketFormData = Omit<CreateTicketInput, 'empleado_id' | 'creado_en' | 'actualizado_en' | 'estado' | 'id' | 'tecnico_id' | 'imagen_url'>;
 
 export const CreateTicket = () => {
@@ -12,6 +12,7 @@ export const CreateTicket = () => {
   const { session, perfil } = useSupabase();
   const { mutateAsync, isPending, isError, error } = useCreateTicket();
 
+  // Motor de Control de Acceso Basado en Roles (RBAC) para componentes UI
   const isReadOnly = perfil?.rol === 'admin' && perfil?.departamento === 'Dirección';
 
   React.useEffect(() => {
@@ -23,10 +24,11 @@ export const CreateTicket = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<TicketFormData>({
     defaultValues: {
       prioridad: 'por_asignar', // Modificado para cumplir el CHECK constraint
-      categoria: 'Hardware',
+      categoria: 'Sin_categorizar',
     }
   });
 
+  // Mutación asíncrona para creación de incidencias (Inicia cadena de triaje IA)
   const onSubmit = async (data: TicketFormData) => {
     if (!session?.user?.id) return;
 
@@ -97,6 +99,7 @@ export const CreateTicket = () => {
                 {...register('categoria')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
               >
+                <option value="Sin_categorizar">Sin categorizar</option>
                 <option value="Hardware">Hardware</option>
                 <option value="Software">Software</option>
                 <option value="Redes">Redes</option>

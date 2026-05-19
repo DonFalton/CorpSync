@@ -14,11 +14,12 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({ isOpen, onClose,
   const { mutateAsync: createTicket } = useCreateTicket();
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [categoria, setCategoria] = useState('Hardware');
+  const [categoria, setCategoria] = useState('Sin_categorizar');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
+  // Mutación asíncrona para creación de incidencias (Inicia cadena de triaje IA)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim() || !descripcion.trim()) {
@@ -42,7 +43,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({ isOpen, onClose,
       // Limpiar form
       setTitulo('');
       setDescripcion('');
-      setCategoria('Hardware');
+      setCategoria('Sin_categorizar');
     } catch (error: any) {
       toast.error(error.message || 'Error al crear el ticket');
     } finally {
@@ -77,6 +78,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({ isOpen, onClose,
               onChange={(e) => setCategoria(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
             >
+              <option value="Sin_categorizar">Sin categorizar</option>
               <option value="Hardware">Hardware</option>
               <option value="Software">Software</option>
               <option value="Redes">Redes</option>

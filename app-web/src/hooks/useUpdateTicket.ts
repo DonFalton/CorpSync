@@ -9,14 +9,14 @@ export const useUpdateTicket = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updateData }: TicketUpdate & { id: number }) => {
-      // 1. Obtener estado anterior para comparar
+      // Extracción de estado previo para motor de comparación de eventos
       const { data: oldTicket } = await supabase
         .from('tickets')
         .select('*')
         .eq('id', id)
         .single();
 
-      // 2. Realizar actualización
+      // Mutación de la entidad principal (Ticket)
       const { data, error } = await supabase
         .from('tickets')
         .update(updateData)
@@ -28,13 +28,13 @@ export const useUpdateTicket = () => {
         throw new Error(error.message);
       }
 
-      // 3. Evaluar cambios e insertar notificaciones
+      // Motor de reglas de negocio para generación de notificaciones transaccionales
       if (oldTicket && data) {
         try {
           console.log('[NOTIF-UPDATE] 1. Ticket actualizado con éxito. Evaluando cambios de estado y asignación para ticket:', data.id);
           const newNotifications = [];
           
-          // a) Cambio de estado -> notificar al creador (empleado_id)
+          // Regla 1: Alerta a creador por transición de ciclo de vida
           if (oldTicket.estado !== data.estado) {
             newNotifications.push({
               perfil_id: data.empleado_id,
@@ -45,7 +45,7 @@ export const useUpdateTicket = () => {
             });
           }
           
-          // b) Nueva Asignación -> notificar al tecnico asignado
+          // Regla 2: Alerta a técnico por transferencia de propiedad
           if (data.tecnico_id && oldTicket.tecnico_id !== data.tecnico_id) {
             newNotifications.push({
               perfil_id: data.tecnico_id,
@@ -56,14 +56,14 @@ export const useUpdateTicket = () => {
             });
           }
           
-          // c) Ticket Resuelto -> notificar al Jefe Técnico
+          // Regla 3: Alerta a gerencia IT por resolución final
           if (data.estado === 'resuelto' && oldTicket.estado !== 'resuelto') {
-            console.log('[NOTIF-UPDATE] 2. Ticket resuelto, buscando admins de Informática...');
+            console.log('[NOTIF-UPDATE] 2. Ticket resuelto, buscando admins de IT...');
             const { data: admins, error: errorAdmins } = await supabase
               .from('perfiles')
               .select('id')
               .eq('rol', 'admin')
-              .eq('departamento', 'Informática');
+              .eq('departamento', 'IT');
               
             console.log('[NOTIF-UPDATE] 3. Resultado de admins encontrados:', admins, errorAdmins);
             
@@ -80,7 +80,7 @@ export const useUpdateTicket = () => {
             }
           }
           
-          // Insertar en lote si hay notificaciones generadas
+          // Transmisión RPC por lotes para evasión de RLS e inserción masiva
           if (newNotifications.length > 0) {
             console.log('[NOTIF-UPDATE] 4. Payload construido para el RPC:', newNotifications);
             const { data: rpcData, error: rpcError } = await supabase.rpc('insertar_notificaciones_seguras', { payload: newNotifications });

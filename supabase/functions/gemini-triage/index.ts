@@ -22,7 +22,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // 1. Verificar firma del Webhook
+    // Validación criptográfica simétrica del secreto de la petición (Mitigación Spoofing)
     const signature = req.headers.get('x-corp-signature');
     console.log(`[DEBUG-AUTH] Firma recibida en cabecera: "${signature}"`);
     console.log(`[DEBUG-AUTH] ¿Secreto del entorno configurado?: ${!!WEBHOOK_SECRET}`);
@@ -33,7 +33,7 @@ Deno.serve(async (req: Request) => {
     }
     console.info("[LOG-AUTH] Autenticación de webhook correcta.");
 
-    // 2. Leer Payload
+    // Deserialización tipada del evento del trigger PostgreSQL
     const payload: TriagePayload = await req.json();
     console.log("[DEBUG-PAYLOAD] Contenido del ticket a procesar:", JSON.stringify(payload));
 
@@ -42,20 +42,20 @@ Deno.serve(async (req: Request) => {
       return new Response("Bad Request", { status: 400 });
     }
 
-    // 3. Conectar con Gemini API (Endpoint v1beta + Gemini 2.5 Flash Estable)
+    // Llamada remota (RPC) al modelo LLM con inyección de reglas de negocio en sistema prompt
     console.info(`[LOG-AI] Solicitando clasificación a Gemini para el Ticket ID: ${payload.ticket_id}`);
-    
+
     // URL blindada según la doc de Google AI Studio (Mayo 2026)
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    
+
     console.log(`[DEBUG-AI] ¿API Key de Gemini configurada?: ${!!GEMINI_API_KEY}`);
 
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ 
-          parts: [{ 
+        contents: [{
+          parts: [{
             text: `Eres el Agente de Triaje IT Senior de CorpSync ITSM. Tu trabajo es leer la incidencia y clasificarla devolviendo ÚNICAMENTE un JSON válido.
             
             RÚBRICA DE PRIORIDADES (Aplica esto estrictamente):
@@ -72,8 +72,8 @@ Deno.serve(async (req: Request) => {
             
             Ticket a analizar:
             Título: ${payload.titulo}
-            Descripción: ${payload.descripcion}` 
-          }] 
+            Descripción: ${payload.descripcion}`
+          }]
         }],
         generationConfig: {
           temperature: 0.1,
@@ -103,7 +103,7 @@ Deno.serve(async (req: Request) => {
     if (!rawText) throw new Error("La estructura de respuesta de Gemini no contiene texto válido.");
     const triageResult = JSON.parse(rawText);
 
-    // 4. Actualizar Base de Datos
+    // Persistencia transaccional de la clasificación estructurada mediante bypass RLS (Service Role)
     console.info(`[LOG-DB] Ejecutando UPDATE en base de datos para Ticket ID: ${payload.ticket_id}`);
     const { data, error: updateError } = await supabaseAdmin
       .from("tickets")

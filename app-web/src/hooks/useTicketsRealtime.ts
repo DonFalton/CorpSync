@@ -6,7 +6,7 @@ export const useTicketsRealtime = (onUpdate?: (payload: any) => void) => {
     const queryClient = useQueryClient();
 
     useEffect(() => {
-        // Nos suscribimos a cualquier UPDATE en la tabla tickets
+        // Suscripción al canal de replicación PostgreSQL (CDC) para eventos de UPDATE
         const channel = supabase
             .channel('schema-db-changes')
             .on(
@@ -19,11 +19,10 @@ export const useTicketsRealtime = (onUpdate?: (payload: any) => void) => {
                 (payload) => {
                     console.info('[Realtime] Ticket actualizado por IA/Técnico:', payload.new.id);
 
-                    // Invalida TODAS las queries que contengan 'tickets' en su key.
-                    // Esto forzará a useTickets.ts a hacer un re-fetch silencioso.
+                    // Inserción de invalidación de caché L1 (TanStack) para forzar re-hidratación transparente
                     queryClient.invalidateQueries({ queryKey: ['tickets'] });
 
-                    // Si se proporciona un callback, se ejecuta para refrescar estados locales
+                    // Delegación de callback para flujos con gestión de estado local (Ej. EmployeeDashboard)
                     if (onUpdate) {
                         onUpdate(payload);
                     }
@@ -31,7 +30,7 @@ export const useTicketsRealtime = (onUpdate?: (payload: any) => void) => {
             )
             .subscribe();
 
-        // Cleanup phase: Desconectar al desmontar para evitar memory leaks
+        // Cierre de la conexión de socket para prevenir fugas de memoria en desmontaje
         return () => {
             supabase.removeChannel(channel);
         };

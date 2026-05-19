@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useSupabase } from '../../app/providers/SupabaseProvider';
 
 export const ProtectedRoute = () => {
+  // Suscripción al proveedor de contexto para validación de tokens JWT
   const { session, isLoading } = useSupabase();
 
   if (isLoading) {

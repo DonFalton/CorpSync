@@ -20,17 +20,17 @@ export const TicketModal = ({ ticket, onClose }: TicketModalProps) => {
   const [categoria, setCategoria] = useState(ticket.categoria || '');
   const [tecnicoId, setTecnicoId] = useState(ticket.tecnico_id || '');
 
-  // Lógica RBAC para la UI
+  // Motor de Control de Acceso Basado en Roles (RBAC) para componentes UI
   const isDireccion = perfil?.rol === 'admin' && perfil?.departamento === 'Dirección';
-  const isSoporteNivel1 = perfil?.rol === 'tecnico' && perfil?.departamento === 'Informática';
-  const isJefeTecnicos = perfil?.rol === 'admin' && perfil?.departamento === 'Informática';
+  const isSoporteNivel1 = perfil?.rol === 'tecnico' && perfil?.departamento === 'IT';
+  const isJefeTecnicos = perfil?.rol === 'admin' && perfil?.departamento === 'IT';
 
   const isReadOnly = isDireccion;
-  // Soporte Nivel 1 no puede robar/reasignar tickets que ya tienen otro dueño
+  // Regla de negocio: Bloqueo de reasignación cruzada para Nivel 1
   const isReassignBlocked = !!(isSoporteNivel1 && ticket.tecnico_id && ticket.tecnico_id !== session?.user?.id);
   const disableTecnicoSelect = isReadOnly || isReassignBlocked;
 
-  // Lógica para el desplegable de técnicos
+  // Inyección dinámica de opciones de personal basada en nivel de privilegios
   let assignableTecnicos = tecnicos || [];
   if (isSoporteNivel1) {
     assignableTecnicos = assignableTecnicos.filter(t => t.id === session?.user?.id);
@@ -125,6 +125,7 @@ export const TicketModal = ({ ticket, onClose }: TicketModalProps) => {
                 disabled={isReadOnly}
                 className="w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:bg-gray-100 text-sm"
               >
+                <option value="Sin_categorizar">Sin categorizar</option>
                 <option value="Hardware">Hardware</option>
                 <option value="Software">Software</option>
                 <option value="Redes">Redes</option>

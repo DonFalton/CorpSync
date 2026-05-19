@@ -41,17 +41,18 @@ export const Tickets = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
+  // Suscripción de lectura y selección activa
   const { data: tickets, isLoading, isError, error } = useTickets();
   const [selectedTicket, setSelectedTicket] = useState<TicketWithRelations | null>(null);
 
-  // Estados locales para el sistema de filtros
+  // Inicialización de estado para motor de búsqueda y segmentación
   const [activeTab, setActiveTab] = useState('todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState('todos');
   const [filterPrioridad, setFilterPrioridad] = useState('todas');
   const [showOnlyMine, setShowOnlyMine] = useState(false);
 
-  // Efecto para Drill-down desde Dashboard
+  // Interceptación de payload de enrutamiento para aplicación de filtros o auto-apertura (Drill-down)
   useEffect(() => {
     const state = location.state as any;
     if (state && (state.filterEstado || state.activeTab || state.searchTerm || state.openTicketId)) {
@@ -119,7 +120,7 @@ export const Tickets = () => {
     );
   }
 
-  // Lógica de filtrado derivado (Client-Side)
+  // Motor de filtrado en memoria (Client-Side) por tab, texto, estado y propiedad
   const filteredTickets = tickets?.filter((ticket) => {
     // 0. Filtro Rápido (Tabs / Colas de Trabajo)
     if (activeTab === 'sin_asignar' && ticket.tecnico_id !== null) {

@@ -2,14 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { QueryData } from '@supabase/supabase-js';
 import { supabase } from '../shared/api/supabase/client';
 
-// 1. Construir la consulta con desambiguación de llave foránea.
+// Query builder con resolución explícita de llaves foráneas para perfil del creador
 const ticketsQuery = supabase
   .from('tickets')
   .select('*, creador:perfiles!tickets_empleado_id_fkey(*)');
 
-// 2. Inferir automáticamente el tipo derivado usando el utilitario de Supabase
+// Inferencia estática de tipos derivados de la consulta SQL (Supabase Types)
 export type TicketWithRelations = QueryData<typeof ticketsQuery>[0];
 
+// Hook de TanStack Query para fetching, caché e invalidación en tiempo real
 export const useTickets = () => {
   return useQuery({
     queryKey: ['tickets'],

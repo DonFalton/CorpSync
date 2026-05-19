@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../shared/api/supabase/client';
 import type { Database } from '../types/supabase';
 
-// Definimos el tipo de entrada directamente del tipo 'Insert' de Supabase
+// Inferencia de tipo estructurado para payloads de inserción según esquema DDL
 export type CreateTicketInput = Database['public']['Tables']['tickets']['Insert'];
 
 export const useCreateTicket = () => {
@@ -22,15 +22,15 @@ export const useCreateTicket = () => {
       return data;
     },
     onSuccess: async (data) => {
-      // 1. Enviar notificación a los Jefes de Técnicos (admin de Informática)
+      // Emisión de alertas asíncronas para el departamento de jefatura IT
       try {
         console.log('[NOTIF] 1. Ticket creado con éxito. Iniciando envío de notificaciones...', data.id);
-        console.log('[NOTIF] 2. Buscando admins de Informática...');
+        console.log('[NOTIF] 2. Buscando admins de IT...');
         const { data: admins, error: errorAdmins } = await supabase
           .from('perfiles')
           .select('id')
           .eq('rol', 'admin')
-          .eq('departamento', 'Informática');
+          .eq('departamento', 'IT');
 
         console.log('[NOTIF] 3. Resultado de admins encontrados:', admins, errorAdmins);
 
@@ -50,7 +50,7 @@ export const useCreateTicket = () => {
         console.error('[NOTIF] EXCEPCIÓN FATAL en useCreateTicket:', err);
       }
 
-      // 2. Forzar la actualización del listado de tickets y el dashboard
+      // Inserción de invalidación de caché global para resincronización de UI
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
     },
   });

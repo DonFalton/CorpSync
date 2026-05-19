@@ -26,7 +26,7 @@ export const useNotificationStore = create<NotificationStore>()(
       unreadCount: 0,
       
       addNotification: (notif) => set((state) => {
-        // Strict deduplication by ID
+        // Algoritmo de deduplicación estricta en memoria local para prevenir hidrataciones redundantes de la BD
         const isDuplicate = state.notificaciones.some(n => n.id === notif.id);
 
         if (isDuplicate) {

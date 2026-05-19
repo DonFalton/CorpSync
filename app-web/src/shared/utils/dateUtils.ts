@@ -1,3 +1,4 @@
+// Formateo de antigüedad relativa para renderizado ágil en UI
 export const formatElapsedTime = (dateString: string): string => {
   const diffMs = new Date().getTime() - new Date(dateString).getTime();
   const diffMinutes = Math.floor(diffMs / (1000 * 60));
@@ -9,6 +10,7 @@ export const formatElapsedTime = (dateString: string): string => {
   return `Hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
 };
 
+// Cálculo de métricas de resolución absolutas (Time-To-Resolve)
 export const formatTotalTime = (startString: string, endString: string): string => {
   const diffMs = Math.max(0, new Date(endString).getTime() - new Date(startString).getTime());
   const diffMinutes = Math.floor(diffMs / (1000 * 60));
@@ -26,6 +28,7 @@ export interface TicketSLAStatus {
   isOverdue: boolean;
 }
 
+// Algoritmo de semaforización de Acuerdos de Nivel de Servicio (SLA) en cliente
 export const getTicketSLAStatus = (creado_en: string, actualizado_en: string, estado: string): TicketSLAStatus => {
   const isClosed = estado.toLowerCase() === 'resuelto' || estado.toLowerCase() === 'cerrado';
   

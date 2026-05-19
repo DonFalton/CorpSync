@@ -9,7 +9,7 @@ export const useTicketNotifications = (usuarioId?: string) => {
   useEffect(() => {
     if (!usuarioId) return;
 
-    // Función de carga inicial para la campana de notificaciones (Hydration)
+    // Hidratación de estado local (Campana UI) desde persistencia de Supabase
     const fetchInitialNotifications = async () => {
       try {
         const { data, error } = await supabase
@@ -30,7 +30,7 @@ export const useTicketNotifications = (usuarioId?: string) => {
       }
     };
 
-    // Función para evaluar SLAs e insertar eventos en notificaciones
+    // Motor asíncrono de evaluación de políticas de Acuerdos de Nivel de Servicio (SLA)
     const evaluateSLAs = async () => {
       try {
         const { data: tickets } = await supabase
@@ -60,7 +60,7 @@ export const useTicketNotifications = (usuarioId?: string) => {
               .from('perfiles')
               .select('id')
               .eq('rol', 'admin')
-              .eq('departamento', 'Informática');
+              .eq('departamento', 'IT');
             admins = data;
           }
           return admins || [];
@@ -71,7 +71,7 @@ export const useTicketNotifications = (usuarioId?: string) => {
           const elapsedMs = now - createdAt;
           const elapsedHours = elapsedMs / (1000 * 60 * 60);
 
-          // 1. Ticket Huérfano
+          // Escenario 1: Detección de Tickets Huérfanos (> 2h sin asignación)
           if (!ticket.tecnico_id && elapsedHours > 2) {
             if (!(await checkExists(ticket.id, 'huerfano'))) {
               const adminList = await getAdmins();
@@ -87,7 +87,7 @@ export const useTicketNotifications = (usuarioId?: string) => {
             }
           }
 
-          // 2. Evaluación de SLA
+          // Escenario 2: Semáforo dinámico de horas SLA basado en criticidad del negocio
           let slaHours = 0;
           switch (ticket.prioridad) {
             case 'critica': slaHours = 4; break;
@@ -135,7 +135,7 @@ export const useTicketNotifications = (usuarioId?: string) => {
       }
     };
 
-    // Suscripción en tiempo real a la tabla notificaciones para este usuario
+    // Escucha activa (WebSocket CDC) para inyección reactiva en el Store de Zustand
     const channel = supabase.channel(`notificaciones-${usuarioId}`)
       .on(
         'postgres_changes',
@@ -153,7 +153,7 @@ export const useTicketNotifications = (usuarioId?: string) => {
       )
       .subscribe();
 
-    // Evaluación inicial y luego cada 5 minutos
+    // Ciclo de vida: Inicialización y polling de evaluación de fondo (Cron 5m)
     fetchInitialNotifications();
     evaluateSLAs();
     const intervalId = setInterval(evaluateSLAs, 300000);

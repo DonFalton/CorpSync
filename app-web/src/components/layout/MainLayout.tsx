@@ -18,7 +18,7 @@ export const MainLayout = () => {
   useTicketNotifications(session?.user?.id);
   useTicketsRealtime();
 
-  // RBAC gestionado a nivel de ruta (Protección del Layout Técnico)
+  // Motor de Control de Acceso Basado en Roles (RBAC) con protección de rutas técnicas
   useEffect(() => {
     if (!isLoading && perfil) {
       if (perfil.rol === 'empleado' || (perfil.rol === 'admin' && perfil.departamento === 'Recursos Humanos')) {
@@ -27,7 +27,7 @@ export const MainLayout = () => {
     }
   }, [isLoading, perfil, navigate]);
 
-  // Inicializar Dark Mode
+  // Inicialización y persistencia local del modo oscuro (Client-Side)
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {

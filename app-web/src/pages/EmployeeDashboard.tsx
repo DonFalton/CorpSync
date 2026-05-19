@@ -17,7 +17,7 @@ export const EmployeeDashboard: React.FC = () => {
   const { notificaciones, unreadCount, markAllAsRead, clearNotifications } = useNotificationStore();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
-  // Iniciar escucha de notificaciones para este empleado
+  // Inicialización del motor de alertas asíncronas para el buzón del empleado
   useTicketNotifications(session?.user?.id);
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -63,6 +63,7 @@ export const EmployeeDashboard: React.FC = () => {
     setIsNotifOpen(!isNotifOpen);
   };
 
+  // Extracción asíncrona de la colección de tickets personal (Fuente de Verdad Local)
   const fetchTickets = useCallback(async () => {
     if (!session?.user?.id) return;
     setIsLoading(true);
@@ -86,7 +87,7 @@ export const EmployeeDashboard: React.FC = () => {
     fetchTickets();
   }, [fetchTickets]);
 
-  // Suscripción Realtime para actualizar la lista de tickets del empleado en vivo (e.g. tras el triaje de IA)
+  // Inyección de WebSocket para actualización automática en background
   useTicketsRealtime(fetchTickets);
 
   const getStatusBadge = (estado: string) => {

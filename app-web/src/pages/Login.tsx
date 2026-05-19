@@ -10,11 +10,12 @@ export const Login = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Redirigir automáticamente si ya existe una sesión
+  // Interceptación de sesión activa y redirección al layout protegido
   if (session) {
     return <Navigate to="/" replace />;
   }
 
+  // Autenticación asíncrona contra Supabase Auth (Email/Password)
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
