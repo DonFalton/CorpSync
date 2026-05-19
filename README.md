@@ -1,53 +1,113 @@
 # 🚀 CorpSync - Sistema de Gestión Inteligente de Tickets IT
 
-![Estado](https://img.shields.io/badge/Estado-En_Desarrollo-orange)
+![Estado](https://img.shields.io/badge/Estado-Listo--TFC-success)
 ![Curso](https://img.shields.io/badge/Proyecto_Final-DAM-blue)
 ![Arquitectura](https://img.shields.io/badge/Arquitectura-Cloud_Native-success)
 
-**CorpSync AI** es una plataforma integral de gestión de servicios IT (ITSM) diseñada para automatizar y agilizar la resolución de incidencias en entornos corporativos. El sistema utiliza un modelo de arquitectura cliente-servidor desacoplado.
+**CorpSync AI** es una plataforma de clase empresarial para la gestión de servicios de tecnología (ITSM) diseñada para automatizar y optimizar la resolución de incidencias en entornos corporativos. El sistema implementa un modelo multiplataforma desacoplado y reactivo, sirviendo como solución integral para el proyecto de fin de ciclo de **Desarrollo de Aplicaciones Multiplataforma (DAM)**.
 
 ---
 
 ## 🏗️ Arquitectura del Sistema
 
-El proyecto está diseñado como un ecosistema multiplataforma con una única fuente de la verdad en la nube, cumpliendo con todos los requisitos del ciclo de **Desarrollo de Aplicaciones Multiplataforma (DAM)**.
+El ecosistema está estructurado bajo un patrón de microservicios y clientes especializados multiplataforma que convergen en una única fuente de verdad en la nube (Single Source of Truth):
 
-* **🧠 Backend:** Supabase (PostgreSQL, Auth, Storage).
-* **🌐 App Web (Técnicos):** React.js + Vite + Tailwind CSS.
-* **📱 App Móvil (Empleados):** Por decidir.
-* **💻 App Escritorio (Administración):** Java Swing + JDBC.
+* **🧠 Backend de Datos & Servidor de Eventos:** Supabase Cloud (PostgreSQL, Triggers reactivos, Realtime CDC vía WebSockets y Edge Functions en Deno con Gemini AI).
+* **🌐 Consola de Operaciones Web (Técnicos/Admins):** Single Page Application (SPA) reactiva e interactiva basada en **React 19**, **Vite 8**, **Tailwind CSS v4** y gestión de estado con **Zustand 5**.
+* **📱 Aplicación de Campo Móvil (Empleados):** Aplicación nativa en **Kotlin** para Android con integración de cámara para captura y reporte visual de incidencias.
+* **💻 Consola de Gestión Masiva (Desktop):** Cliente local de escritorio implementado en **Java Swing** con persistencia relacional a través del driver JDBC.
 
 ---
 
 ## 📂 Estructura del Monorepo
 
-Este repositorio utiliza una estructura de Monorepo. Cada cliente es un ecosistema independiente que se conecta al backend central.
+El proyecto se organiza bajo una arquitectura de monorepo unificado, simplificando el control de versiones y el despliegue del ecosistema tecnológico:
 
 ```text
-Corpsync-AI/
-├── 📁 app-web/          # Panel de control Kanban para técnicos (React)
-├── 📁 app-movil/        # App para reporte de incidencias con cámara (React Native o Java/Kotlin)
-├── 📁 app-escritorio/   # Backoffice para gestión masiva y ficheros (Java Swing)
-├── 📁 backend/          # Scripts SQL, Triggers
-└── 📄 README.md         # Documentación principal del proyecto
+CorpSync/
+├── 📁 app-web/          # Panel de control Kanban y monitor SLA para técnicos (React 19)
+├── 📁 app-movil/        # Cliente Android nativo para reporte de incidencias (Kotlin)
+├── 📁 app-escritorio/   # Backoffice Swing para auditoría y gestión masiva (Java)
+├── 📁 supabase/         # Infraestructura de BD, triggers relacionales y Edge Functions (Deno)
+└── 📄 README.md         # Documentación principal del monorepo
 ```
+
 ---
 
 ## 🛠️ Requisitos Previos
 
-Apartado aún en desarrollo
+Para levantar el ecosistema completo localmente o en un entorno de desarrollo integrado, el sistema requiere:
+
+1. **Entorno Node.js**: Node.js `v20.x` o superior (junto con `npm` o `pnpm`).
+2. **Entorno Java (Escritorio)**: Java JDK `17` o superior para compilar y ejecutar el cliente desktop.
+3. **Entorno Android (Móvil)**: Android Studio Jellyfish+ con SDK API `34` instalado.
+4. **Infraestructura Local**: Docker Desktop en ejecución (requerido para levantar Supabase de forma local con la CLI).
+5. **Supabase CLI**: Instalado en el sistema para la gestión de migraciones y funciones en Deno.
+6. **API Key de Gemini**: Clave de API activa de Google AI Studio para el motor de triaje con Inteligencia Artificial.
+
+---
+
+## 🚀 Instalación y Despliegue Local
+
+Sigue esta guía paso a paso para inicializar todos los componentes del ecosistema CorpSync de forma secuencial:
+
+### 1. Preparación del Backend (Supabase Cloud-First)
+El proyecto está diseñado para funcionar de forma nativa en la nube, aprovechando la infraestructura Serverless de Supabase.
+
+**A. Configuración de Base de Datos y Cliente:**
+1. Crea un nuevo proyecto en [Supabase](https://supabase.com/).
+2. Ejecuta los scripts de creación de tablas, políticas RLS y el trigger asíncrono (`pg_net`) directamente en el SQL Editor del panel de control de Supabase.
+3. Copia la `URL` del proyecto y la `anon key` y configúralas en el archivo `app-web/.env` de tu cliente local.
+
+**B. Despliegue de Edge Functions (Triaje IA):**
+Para desplegar la lógica de triaje con Gemini, enlaza tu entorno local con tu proyecto en la nube mediante la CLI de Supabase:
+
+```bash
+# 1. Autentícate en Supabase desde la terminal
+npx supabase login
+
+# 2. Enlaza tu repositorio con tu proyecto en la nube (sustituye por tu ID de proyecto)
+npx supabase link --project-ref tu_project_id
+
+# 3. Inyecta los secretos de entorno de forma segura en la nube
+npx supabase secrets set GEMINI_API_KEY="tu_api_key_de_google"
+npx supabase secrets set ITSM_WEBHOOK_SECRET="corpsync_dev_secret_2026"
+
+# 4. Despliega la función desactivando la verificación JWT por defecto 
+# para permitir la validación de firma simétrica personalizada
+npx supabase functions deploy gemini-triage --no-verify-jwt
+```
+
+### 2. Lanzamiento del Cliente Web (`app-web`)
+Instala las dependencias y ejecuta el servidor de desarrollo local de Vite:
+```bash
+cd app-web
+npm install
+npm run dev
+```
+La aplicación web se levantará por defecto en `http://localhost:5173`.
+
+### 3. Compilación de la Aplicación de Escritorio (`app-escritorio`)
+Abre el directorio `/app-escritorio` en tu IDE favorito (IntelliJ IDEA o Eclipse):
+1. Asegúrate de añadir las librerías del directorio `/lib` (Driver JDBC de Postgres, Gson) a la biblioteca del proyecto (Build Path).
+2. Ejecuta la clase de entrada principal `App.java` (o equivalente) como aplicación de Java.
+
+### 4. Lanzamiento de la Aplicación Móvil (`app-movil`)
+1. Importa el subdirectorio `/app-movil` en Android Studio.
+2. Sincroniza Gradle (`Gradle Sync`).
+3. Compila y ejecuta la aplicación en un dispositivo físico o emulador con servicios de Google Play.
 
 ---
 
 ## 👥 Reglas de Contribución y Equipo
 
-Para mantener el historial limpio y evitar conflictos de fusión, cada miembro trabajará exclusivamente en su directorio asignado.
+Para asegurar la consistencia metodológica del repositorio de cara a la defensa del tribunal, cada miembro del equipo trabaja en su respectiva sección:
 
-* **Martín (Project Manager / Fullstack):** `app-web` y `backend`
-* **Rafa (Mobile Developer):** `app-movil`
-* **Germán (Desktop Developer):** `app-escritorio`
+* **Martín (Lead Architect & Fullstack):** Propietario de `app-web/` y la infraestructura central `supabase/`.
+* **Rafa (Mobile Specialist):** Propietario de `app-movil/` (Kotlin).
+* **Germán (Desktop Specialist):** Propietario de `app-escritorio/` (Java Swing).
 
-**Regla de Seguridad:** NUNCA hacer commit de archivos `.env`, `.env.local`, contraseñas JDBC ni API Keys de Google Gemini.
+**Regla de Seguridad Estricta:** Queda terminantemente prohibido subir contraseñas de red, credenciales JDBC activas, tokens de Supabase, API keys de Google Cloud o el fichero de entorno `.env` local.
 
 ---
 *Proyecto de Trabajo Final de Ciclo - DAM*
