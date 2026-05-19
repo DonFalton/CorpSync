@@ -1,4 +1,4 @@
-package com.example.corpsyncmobile
+package com.example.corpsyncmobile.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
