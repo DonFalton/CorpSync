@@ -1,5 +1,6 @@
-package com.example.corpsyncmobile
+package com.example.corpsyncmobile.data
 
+import com.example.corpsyncmobile.BuildConfig
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
