@@ -1,118 +1,117 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Definimos los tipos esperados
+// Definición estricta de interfaces
 interface TriagePayload {
   ticket_id: number;
   titulo: string;
   descripcion: string;
 }
 
-interface GeminiResponse {
-  prioridad: string;
-  categoria: string;
+interface GeminiTriageResponse {
+  prioridad: 'baja' | 'media' | 'alta' | 'critica' | 'por_asignar';
+  categoria: 'Hardware' | 'Software' | 'Redes' | 'Otros' | 'Sin_categorizar';
 }
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
-const geminiApiKey = Deno.env.get("GEMINI_API_KEY") as string;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") as string;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") as string;
+const WEBHOOK_SECRET = Deno.env.get("ITSM_WEBHOOK_SECRET") as string;
+
+// Cliente Admin para saltar RLS (Solo instanciado una vez)
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 Deno.serve(async (req: Request) => {
-  // Manejo de pre-flight CORS
+  // CORS Pre-flight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } })
+    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } });
   }
 
   try {
-    const payload: TriagePayload = await req.json();
-    
-    // Validación de la entrada
-    if (!payload.ticket_id || !payload.titulo || !payload.descripcion) {
-      return new Response(JSON.stringify({ error: "Faltan campos obligatorios" }), { 
-        status: 400, 
-        headers: { "Content-Type": "application/json" } 
-      });
+    // 1. Validación de Seguridad (Webhook Signature)
+    const signature = req.headers.get('x-corp-signature');
+    if (!WEBHOOK_SECRET || signature !== WEBHOOK_SECRET) {
+      console.error("Fallo de autenticación: Firma de webhook inválida.");
+      return new Response("Unauthorized", { status: 401 });
     }
 
-    // 1. Invocación a Gemini API usando el modelo Gemini 1.5 Flash (veloz y económico)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-    
-    // Structured Prompt para obligar al modelo a devolver exclusivamente un JSON sin markdown fences
-    const prompt = `
-      Eres un asistente experto en triaje de ITSM de Nivel 1.
-      Tu tarea es analizar el título y la descripción del ticket entrante y clasificarlo en un objeto JSON estricto.
-      
-      Reglas estrictas de salida:
-      - "prioridad" debe ser exactamente uno de los siguientes valores en minúsculas: "baja", "media", "alta", "critica".
-      - "categoria" debe inferirse en base al contenido.
-      - Solo debes responder con el objeto JSON puro sin formato Markdown extra ni explicaciones.
-      
-      Ejemplo de salida:
-      {"prioridad": "alta", "categoria": "hardware"}
+    const payload: TriagePayload = await req.json();
 
-      Ticket a clasificar:
-      Título: ${payload.titulo}
-      Descripción: ${payload.descripcion}
+    if (!payload.ticket_id || (!payload.titulo && !payload.descripcion)) {
+      return new Response("Bad Request: Campos faltantes", { status: 400 });
+    }
+
+    // 2. Llamada a Gemini 1.5 Flash usando Structured Outputs (JSON Schema estricto)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+    const systemInstruction = `
+      Eres el Agente de Triaje IT de CorpSync ITSM. Clasifica la incidencia técnica basándote en su título y descripción.
+      Si el texto carece de sentido técnico, clasifícalo como "Sin_categorizar" y "por_asignar".
     `;
 
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: [{ parts: [{ text: `Título: ${payload.titulo}\nDescripción: ${payload.descripcion}` }] }],
         generationConfig: {
-          response_mime_type: "application/json" // Feature de Gemini para forzar la salida estructurada
+          temperature: 0.1, // Determinismo máximo
+          response_mime_type: "application/json",
+          response_schema: {
+            type: "OBJECT",
+            properties: {
+              prioridad: {
+                type: "STRING",
+                enum: ["baja", "media", "alta", "critica", "por_asignar"]
+              },
+              categoria: {
+                type: "STRING",
+                enum: ["Hardware", "Software", "Redes", "Otros", "Sin_categorizar"]
+              }
+            },
+            required: ["prioridad", "categoria"]
+          }
         }
       })
     });
 
     if (!geminiRes.ok) {
-      throw new Error(`Gemini API error HTTP ${geminiRes.status}: ${await geminiRes.text()}`);
+      throw new Error(`Gemini API Error: ${await geminiRes.text()}`);
     }
 
     const geminiData = await geminiRes.json();
-    const triageResultString = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!triageResultString) {
-      throw new Error("Respuesta vacía o formato inesperado desde Gemini");
-    }
+    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error("Respuesta vacía de Gemini");
 
-    const triageResult: GeminiResponse = JSON.parse(triageResultString);
+    const triageResult: GeminiTriageResponse = JSON.parse(rawText);
 
-    // 2. Validación y limpieza (Fallback safety)
-    const prioridadesValidas = ['baja', 'media', 'alta', 'critica'];
-    const prioridadLimpia = prioridadesValidas.includes(triageResult.prioridad.toLowerCase()) 
-      ? triageResult.prioridad.toLowerCase() 
-      : 'por_asignar';
-
-    const categoriaLimpia = triageResult.categoria ? triageResult.categoria.toLowerCase() : 'sin_categorizar';
-
-    // 3. Modificación asíncrona en Supabase (Bypass RLS usando Service Role)
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    
-    const { error: updateError } = await supabaseAdmin
+    // 3. Persistencia en Supabase (con bloqueo por estado para evitar sobreescritura manual)
+    const { data, error: updateError } = await supabaseAdmin
       .from("tickets")
-      .update({ 
-        prioridad: prioridadLimpia, 
-        categoria: categoriaLimpia 
+      .update({
+        prioridad: triageResult.prioridad,
+        categoria: triageResult.categoria
       })
-      .eq("id", payload.ticket_id);
+      .eq("id", payload.ticket_id)
+      .eq("estado", "pendiente") // CRÍTICO: No sobreescribir si un humano ya lo atendió
+      .select("id");
 
-    if (updateError) {
-      throw new Error(`Supabase Update Error: ${updateError.message}`);
+    if (updateError) throw updateError;
+
+    if (!data || data.length === 0) {
+      console.warn(`Ticket ${payload.ticket_id} no actualizado. Posiblemente ya modificado por un técnico.`);
     }
 
-    return new Response(JSON.stringify({ success: true, triage: { prioridad: prioridadLimpia, categoria: categoriaLimpia } }), {
-      headers: { "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ success: true, triage: triageResult }), {
       status: 200,
+      headers: { "Content-Type": "application/json" }
     });
 
   } catch (err: any) {
-    console.error("Error en Edge Function gemini-triage:", err.message);
-    // Retornar 500 silenciosamente para dejar traza en Edge Logs sin romper el cliente (ya que es asíncrono)
-    return new Response(JSON.stringify({ error: 'Internal Server Error durante triaje asíncrono' }), { 
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    console.error("Error crítico en Edge Function:", err.message);
+    // Retornamos 500 para dejar traza en el dashboard de Supabase, 
+    // pero el cliente JDBC/App no se entera porque la llamada original de pg_net es "fire-and-forget".
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
   }
 });

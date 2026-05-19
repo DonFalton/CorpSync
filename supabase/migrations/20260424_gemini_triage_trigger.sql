@@ -1,7 +1,7 @@
--- 1. Asegurar que la extensión asíncrona pg_net existe
-CREATE EXTENSION IF NOT EXISTS pg_net;
+-- 1. Asegurar que la extensión asíncrona pg_net está habilitada
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 
--- 2. Función PL/pgSQL responsable de empaquetar el payload y disparar la llamada HTTP
+-- 2. Función PL/pgSQL para disparar el Webhook de forma segura y no bloqueante
 CREATE OR REPLACE FUNCTION public.trigger_gemini_triage()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -10,25 +10,26 @@ AS $$
 DECLARE
   request_body jsonb;
   edge_function_url text := 'https://mofuozleqotjlsavxfkv.supabase.co/functions/v1/gemini-triage';
-  -- Se asume que el token Service Role Key se aloja en current_setting o se hardcodea (no recomendado).
-  -- Reemplazar <YOUR_SERVICE_ROLE_KEY> por tu clave real o usar Vault / pg_sodium.
-  auth_token text := '<YOUR_SERVICE_ROLE_KEY>';
+  webhook_secret text;
 BEGIN
-  -- Construimos el payload extrayendo únicamente los datos necesarios de la fila recién insertada
+  -- Extraemos el secreto del webhook configurado de forma segura en Postgres
+  -- Si no está configurado, usamos un fallback vacío para no romper la transacción
+  webhook_secret := current_setting('app.settings.webhook_secret', true);
+
+  -- Payload mínimo requerido por la IA
   request_body := jsonb_build_object(
     'ticket_id', NEW.id,
     'titulo', NEW.titulo,
     'descripcion', NEW.descripcion
   );
 
-  -- Enviamos la petición POST asíncrona (esto enviará el trabajo al worker de pg_net inmediatamente 
-  -- y dejará que la transacción principal haga un COMMIT sin bloqueos de red).
+  -- net.http_post delega la llamada a un background worker (100% asíncrono)
   PERFORM net.http_post(
     url := edge_function_url,
     body := request_body,
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || auth_token
+      'x-corp-signature', COALESCE(webhook_secret, '')
     )
   );
 
