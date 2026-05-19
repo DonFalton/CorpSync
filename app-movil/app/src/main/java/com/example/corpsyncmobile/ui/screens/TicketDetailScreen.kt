@@ -3,10 +3,12 @@ package com.example.corpsyncmobile.ui.screens
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -17,21 +19,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAddAlt1
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,56 +46,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.SubcomposeAsyncImage
-import com.example.corpsyncmobile.data.ImageService
-import com.example.corpsyncmobile.data.TicketDetail
-import com.example.corpsyncmobile.data.TicketService
+import com.example.corpsyncmobile.domain.model.TicketDetail
+import com.example.corpsyncmobile.data.repository.AttachmentRepository
+import com.example.corpsyncmobile.data.repository.CategoryRepository
+import com.example.corpsyncmobile.data.repository.TicketRepository
+import com.example.corpsyncmobile.ui.components.AppFooter
+import com.example.corpsyncmobile.ui.components.BackIconButton
+import com.example.corpsyncmobile.ui.components.BrandHeader
+import com.example.corpsyncmobile.ui.components.DotBadge
+import com.example.corpsyncmobile.ui.components.ErrorState
+import com.example.corpsyncmobile.ui.components.ImageViewerDialog
+import com.example.corpsyncmobile.ui.components.IconTile
+import com.example.corpsyncmobile.ui.components.InfoSurface
+import com.example.corpsyncmobile.ui.components.LoadingState
+import com.example.corpsyncmobile.ui.components.PriorityPalettes
+import com.example.corpsyncmobile.ui.components.SectionHeader
+import com.example.corpsyncmobile.ui.components.StatusPalettes
+import com.example.corpsyncmobile.ui.theme.BadgeTextStyle
+import com.example.corpsyncmobile.ui.theme.BrandBorderWidth
+import com.example.corpsyncmobile.ui.theme.BrandShapes
 import com.example.corpsyncmobile.ui.theme.CorpIndigo
 import com.example.corpsyncmobile.ui.theme.FooterGray
 import com.example.corpsyncmobile.ui.theme.LabelGray
 import com.example.corpsyncmobile.ui.theme.PageBackground
+import com.example.corpsyncmobile.ui.theme.PlaceholderGray
 import com.example.corpsyncmobile.ui.theme.SubtleDivider
-import com.example.corpsyncmobile.ui.theme.SurfaceWhite
 import com.example.corpsyncmobile.ui.theme.TextPrimary
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-
-private val InfoCardBg = Color(0xFFF8FAFC)
-private val InfoIconBg = Color(0xFFEEF2FF)
-private val InfoIconBorder = Color(0xFFC7D2FE)
-
-private val estadoLabels = mapOf(
-    "pendiente" to "Pendiente",
-    "en_proceso" to "En proceso",
-    "resuelto" to "Resuelto"
-)
-
-private val prioridadLabels = mapOf(
-    "baja" to "Prioridad baja",
-    "media" to "Prioridad media",
-    "alta" to "Prioridad alta",
-    "critica" to "Prioridad crítica"
-)
-
-private val categoriaLabels = mapOf(
-    "hardware" to "Hardware",
-    "software" to "Software",
-    "red" to "Red",
-    "otro" to "Otros"
-)
-
-private data class BadgePalette(val bg: Color, val fg: Color, val border: Color)
-
-private val statusOpenPalette = BadgePalette(Color(0xFFFFF7ED), Color(0xFFC2410C), Color(0xFFFED7AA))
-private val statusProgressPalette = BadgePalette(Color(0xFFEFF6FF), Color(0xFF1D4ED8), Color(0xFFBFDBFE))
-private val statusResolvedPalette = BadgePalette(Color(0xFFECFDF5), Color(0xFF047857), Color(0xFFA7F3D0))
-
-private val priorityCriticaPalette = BadgePalette(Color(0xFFFEF2F2), Color(0xFFB91C1C), Color(0xFFFECACA))
-private val priorityAltaPalette = BadgePalette(Color(0xFFFFF7ED), Color(0xFFC2410C), Color(0xFFFED7AA))
-private val priorityMediaPalette = BadgePalette(Color(0xFFFEFCE8), Color(0xFF92400E), Color(0xFFFDE68A))
-private val priorityBajaPalette = BadgePalette(Color(0xFFECFDF5), Color(0xFF047857), Color(0xFFA7F3D0))
 
 @Composable
 fun TicketDetailScreen(
@@ -117,7 +93,7 @@ fun TicketDetailScreen(
             isLoading = true
             errorMessage = null
             try {
-                ticket = TicketService.getById(ticketId)
+                ticket = TicketRepository.getById(ticketId)
             } catch (e: Exception) {
                 errorMessage = e.message ?: "No se pudo cargar el ticket"
             } finally {
@@ -136,12 +112,14 @@ fun TicketDetailScreen(
             .background(PageBackground)
     ) {
         when {
-            isLoading && ticket == null -> CenteredLoading(onBack)
-            errorMessage != null && ticket == null -> CenteredError(
-                message = errorMessage!!,
-                onRetry = ::load,
-                onBack = onBack
-            )
+            isLoading && ticket == null -> Column(modifier = Modifier.fillMaxSize()) {
+                SimpleTopBar(onBack = onBack)
+                LoadingState()
+            }
+            errorMessage != null && ticket == null -> Column(modifier = Modifier.fillMaxSize()) {
+                SimpleTopBar(onBack = onBack)
+                ErrorState(message = errorMessage!!, onRetry = ::load)
+            }
             ticket != null -> DetailContent(
                 ticket = ticket!!,
                 scroll = scroll,
@@ -171,10 +149,10 @@ private fun DetailContent(
 
             SectionHeader("DESCRIPCIÓN")
             Spacer(modifier = Modifier.height(12.dp))
-            DescriptionBox(text = ticket.descripcion)
+            InfoSurface { DescriptionText(text = ticket.descripcion) }
 
             val attachmentUrl = remember(ticket.imagenUrl) {
-                ImageService.resolveTicketImage(ticket.imagenUrl)
+                AttachmentRepository.resolveTicketImage(ticket.imagenUrl)
             }
             if (attachmentUrl != null) {
                 Spacer(modifier = Modifier.height(24.dp))
@@ -184,13 +162,7 @@ private fun DetailContent(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-            Text(
-                text = "CorpSync ITSM · v1.0 · DAM 2025–2026",
-                color = FooterGray,
-                fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
+            AppFooter()
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -198,26 +170,9 @@ private fun DetailContent(
 
 @Composable
 private fun DetailHeader(ticket: TicketDetail, onBack: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(CorpIndigo)
-            .padding(horizontal = 24.dp, vertical = 24.dp)
-    ) {
+    BrandHeader {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White.copy(alpha = 0.15f))
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Volver",
-                    tint = Color.White
-                )
-            }
+            BackIconButton(onClick = onBack)
             Spacer(modifier = Modifier.width(14.dp))
             Text(
                 text = "Ticket #${ticket.id}",
@@ -243,10 +198,17 @@ private fun DetailHeader(ticket: TicketDetail, onBack: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatusBadge(ticket.estado)
+            DotBadge(
+                label = (CategoryRepository.estado[ticket.estado] ?: ticket.estado).uppercase(),
+                palette = StatusPalettes.forEstado(ticket.estado)
+            )
             val prioridad = ticket.prioridad
             if (prioridad != null && prioridad != "por_asignar") {
-                PriorityBadge(prioridad)
+                val short = CategoryRepository.prioridad[prioridad] ?: prioridad
+                DotBadge(
+                    label = "PRIORIDAD ${short.uppercase()}",
+                    palette = PriorityPalettes.forPrioridad(prioridad)
+                )
             }
             val categoria = ticket.categoria
             if (categoria != null && categoria != "sin_categorizar") {
@@ -257,121 +219,51 @@ private fun DetailHeader(ticket: TicketDetail, onBack: () -> Unit) {
 }
 
 @Composable
-private fun StatusBadge(estado: String) {
-    val palette = when (estado) {
-        "resuelto" -> statusResolvedPalette
-        "en_proceso" -> statusProgressPalette
-        else -> statusOpenPalette
-    }
-    DotBadge(
-        label = (estadoLabels[estado] ?: estado).uppercase(),
-        palette = palette
-    )
-}
-
-@Composable
-private fun PriorityBadge(prioridad: String) {
-    val palette = when (prioridad) {
-        "critica" -> priorityCriticaPalette
-        "alta" -> priorityAltaPalette
-        "media" -> priorityMediaPalette
-        "baja" -> priorityBajaPalette
-        else -> statusOpenPalette
-    }
-    DotBadge(
-        label = (prioridadLabels[prioridad] ?: prioridad).uppercase(),
-        palette = palette
-    )
-}
-
-@Composable
 private fun CategoryBadge(categoria: String) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(BrandShapes.badge)
             .background(Color.White.copy(alpha = 0.12f))
             .border(
-                width = 1.5.dp,
+                width = BrandBorderWidth,
                 color = Color.White.copy(alpha = 0.25f),
-                shape = RoundedCornerShape(20.dp)
+                shape = BrandShapes.badge
             )
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
-            text = (categoriaLabels[categoria] ?: categoria).uppercase(),
+            text = (CategoryRepository.categoria[categoria] ?: categoria).uppercase(),
             color = Color.White,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
-        )
-    }
-}
-
-@Composable
-private fun DotBadge(label: String, palette: BadgePalette) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(palette.bg)
-            .border(
-                width = 1.5.dp,
-                color = palette.border,
-                shape = RoundedCornerShape(20.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(palette.fg)
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = label,
-            color = palette.fg,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
+            style = BadgeTextStyle
         )
     }
 }
 
 @Composable
 private fun InfoCard(ticket: TicketDetail) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(InfoCardBg)
-            .border(
-                width = 1.5.dp,
-                color = SubtleDivider,
-                shape = RoundedCornerShape(14.dp)
+    InfoSurface(contentPadding = PaddingValues(horizontal = 20.dp)) {
+        Column {
+            InfoRow(
+                icon = Icons.Filled.Person,
+                label = "SOLICITANTE",
+                value = ticket.empleado?.nombre ?: ticket.empleado?.email ?: "—",
+                isMuted = ticket.empleado == null
             )
-            .padding(horizontal = 20.dp)
-    ) {
-        InfoRow(
-            icon = Icons.Filled.Person,
-            label = "SOLICITANTE",
-            value = ticket.empleado?.nombre ?: ticket.empleado?.email ?: "—",
-            isMuted = ticket.empleado == null
-        )
-        InfoDivider()
-        InfoRow(
-            icon = Icons.Filled.PersonAddAlt1,
-            label = "ASIGNADO A",
-            value = ticket.tecnico?.nombre ?: "Sin asignar",
-            isMuted = ticket.tecnico == null
-        )
-        InfoDivider()
-        InfoRow(
-            icon = Icons.Filled.CalendarToday,
-            label = "CREADO",
-            value = formatCreated(ticket.creadoEn),
-            isMuted = false
-        )
+            InfoDivider()
+            InfoRow(
+                icon = Icons.Filled.PersonAddAlt1,
+                label = "ASIGNADO A",
+                value = ticket.tecnico?.nombre ?: "Sin asignar",
+                isMuted = ticket.tecnico == null
+            )
+            InfoDivider()
+            InfoRow(
+                icon = Icons.Filled.CalendarToday,
+                label = "CREADO",
+                value = formatCreated(ticket.creadoEn),
+                isMuted = false
+            )
+        }
     }
 }
 
@@ -383,25 +275,7 @@ private fun InfoRow(icon: ImageVector, label: String, value: String, isMuted: Bo
             .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(InfoIconBg)
-                .border(
-                    width = 1.5.dp,
-                    color = InfoIconBorder,
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = CorpIndigo,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+        IconTile(icon = icon)
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -434,51 +308,30 @@ private fun InfoDivider() {
 }
 
 @Composable
-private fun SectionHeader(title: String) {
+private fun DescriptionText(text: String) {
     Text(
-        text = title,
-        color = LabelGray,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.sp
+        text = text,
+        color = TextPrimary,
+        fontSize = 15.sp,
+        lineHeight = 24.sp
     )
 }
 
 @Composable
-private fun DescriptionBox(text: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(InfoCardBg)
-            .border(
-                width = 1.5.dp,
-                color = SubtleDivider,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .padding(horizontal = 20.dp, vertical = 18.dp)
-    ) {
-        Text(
-            text = text,
-            color = TextPrimary,
-            fontSize = 15.sp,
-            lineHeight = 24.sp
-        )
-    }
-}
-
-@Composable
 private fun AttachmentThumb(url: String) {
+    var viewerOpen by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .size(120.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF3F4F6))
+            .clip(BrandShapes.iconTile)
+            .background(PlaceholderGray)
             .border(
-                width = 1.5.dp,
+                width = BrandBorderWidth,
                 color = SubtleDivider,
-                shape = RoundedCornerShape(12.dp)
+                shape = BrandShapes.iconTile
             )
+            .clickable { viewerOpen = true }
     ) {
         SubcomposeAsyncImage(
             model = url,
@@ -514,80 +367,29 @@ private fun AttachmentThumb(url: String) {
             }
         )
     }
-}
 
-@Composable
-private fun CenteredLoading(onBack: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        SimpleTopBar(onBack = onBack)
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = CorpIndigo)
-        }
-    }
-}
-
-@Composable
-private fun CenteredError(message: String, onRetry: () -> Unit, onBack: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        SimpleTopBar(onBack = onBack)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = message,
-                    color = MaterialTheme.colorScheme.error,
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(
-                    onClick = onRetry,
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = CorpIndigo),
-                    modifier = Modifier.height(44.dp)
-                ) {
-                    Text(text = "Reintentar", fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
+    if (viewerOpen) {
+        ImageViewerDialog(
+            url = url,
+            onDismiss = { viewerOpen = false },
+            contentDescription = "Adjunto del ticket"
+        )
     }
 }
 
 @Composable
 private fun SimpleTopBar(onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(CorpIndigo)
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color.White.copy(alpha = 0.15f))
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Volver",
-                tint = Color.White
+    BrandHeader {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            BackIconButton(onClick = onBack)
+            Spacer(modifier = Modifier.width(14.dp))
+            Text(
+                text = "Detalle del ticket",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
-        Spacer(modifier = Modifier.width(14.dp))
-        Text(
-            text = "Detalle del ticket",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
-        )
     }
 }
 

@@ -13,34 +13,27 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -62,33 +55,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.example.corpsyncmobile.data.TicketService
+import com.example.corpsyncmobile.data.repository.AttachmentRepository
+import com.example.corpsyncmobile.data.repository.CategoryRepository
+import com.example.corpsyncmobile.data.repository.TicketRepository
+import com.example.corpsyncmobile.ui.components.AppFooter
+import com.example.corpsyncmobile.ui.components.BrandHeader
+import com.example.corpsyncmobile.ui.components.BrandOutlinedTextField
+import com.example.corpsyncmobile.ui.components.FieldLabel
+import com.example.corpsyncmobile.ui.components.PrimaryActionButton
+import com.example.corpsyncmobile.ui.components.brandTextFieldColors
+import com.example.corpsyncmobile.ui.theme.BrandBorderWidth
+import com.example.corpsyncmobile.ui.theme.BrandShapes
 import com.example.corpsyncmobile.ui.theme.CorpIndigo
-import com.example.corpsyncmobile.ui.theme.CorpIndigoPressed
-import com.example.corpsyncmobile.ui.theme.FooterGray
-import com.example.corpsyncmobile.ui.theme.InputBorder
 import com.example.corpsyncmobile.ui.theme.LabelGray
 import com.example.corpsyncmobile.ui.theme.PageBackground
 import com.example.corpsyncmobile.ui.theme.SubtleDivider
-import com.example.corpsyncmobile.ui.theme.TextPrimary
 import kotlinx.coroutines.launch
 import java.io.File
-
-private val categorias = linkedMapOf(
-    "sin_categorizar" to "Sin categorizar",
-    "hardware" to "Hardware",
-    "software" to "Software",
-    "red" to "Red",
-    "otro" to "Otros"
-)
-
-private val prioridades = linkedMapOf(
-    "por_asignar" to "Por asignar",
-    "baja" to "Baja",
-    "media" to "Media",
-    "alta" to "Alta",
-    "critica" to "Crítica"
-)
 
 @Composable
 fun CreateTicketScreen(
@@ -140,12 +123,9 @@ fun CreateTicketScreen(
             isLoading = true
             errorMessage = null
             try {
-                val imageBytes = photoUri?.let { uri ->
-                    context.contentResolver.openInputStream(uri)?.readBytes()
-                        ?: throw Exception("No se pudo leer la imagen")
-                }
+                val imageBytes = photoUri?.let { AttachmentRepository.readBytes(context, it) }
 
-                TicketService.create(
+                TicketRepository.create(
                     titulo = titulo,
                     descripcion = descripcion,
                     categoria = categoria,
@@ -173,7 +153,20 @@ fun CreateTicketScreen(
             .background(PageBackground)
             .verticalScroll(rememberScrollState())
     ) {
-        FormHeader()
+        BrandHeader(contentPadding = PaddingValues(horizontal = 28.dp, vertical = 32.dp)) {
+            Text(
+                text = "Nuevo Ticket",
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Completa el formulario para reportar un problema",
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 14.sp
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -185,7 +178,7 @@ fun CreateTicketScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             FieldGroup(label = "Título") {
-                StyledTextField(
+                BrandOutlinedTextField(
                     value = titulo,
                     onValueChange = { titulo = it; errorMessage = null },
                     placeholder = "Introduce un título",
@@ -197,7 +190,7 @@ fun CreateTicketScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             FieldGroup(label = "Descripción") {
-                StyledTextField(
+                BrandOutlinedTextField(
                     value = descripcion,
                     onValueChange = { descripcion = it; errorMessage = null },
                     placeholder = "Describe el problema",
@@ -212,7 +205,7 @@ fun CreateTicketScreen(
             FieldGroup(label = "Categoría") {
                 DropdownField(
                     selected = categoria,
-                    options = categorias,
+                    options = CategoryRepository.categoria,
                     onSelect = { categoria = it },
                     enabled = !isLoading
                 )
@@ -223,7 +216,7 @@ fun CreateTicketScreen(
             FieldGroup(label = "Prioridad") {
                 DropdownField(
                     selected = prioridad,
-                    options = prioridades,
+                    options = CategoryRepository.prioridad,
                     onSelect = { prioridad = it },
                     enabled = !isLoading
                 )
@@ -257,9 +250,10 @@ fun CreateTicketScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            SubmitButton(
-                enabled = !isLoading && titulo.isNotBlank() && descripcion.isNotBlank(),
+            PrimaryActionButton(
+                text = "Enviar ticket",
                 isLoading = isLoading,
+                enabled = titulo.isNotBlank() && descripcion.isNotBlank(),
                 onClick = ::submitTicket
             )
 
@@ -269,37 +263,8 @@ fun CreateTicketScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "CorpSync ITSM · v1.0 · DAM 2025–2026",
-                color = FooterGray,
-                fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+            AppFooter()
         }
-    }
-}
-
-@Composable
-private fun FormHeader() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(CorpIndigo)
-            .padding(horizontal = 28.dp, vertical = 32.dp)
-    ) {
-        Text(
-            text = "Nuevo Ticket",
-            color = Color.White,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Completa el formulario para reportar un problema",
-            color = Color.White.copy(alpha = 0.85f),
-            fontSize = 14.sp
-        )
     }
 }
 
@@ -326,39 +291,10 @@ private fun SectionLabel(text: String) {
 @Composable
 private fun FieldGroup(label: String, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label.uppercase(),
-            color = LabelGray,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            letterSpacing = 0.5.sp
-        )
+        FieldLabel(label)
         Spacer(modifier = Modifier.height(8.dp))
         content()
     }
-}
-
-@Composable
-private fun StyledTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    enabled: Boolean,
-    singleLine: Boolean,
-    minHeight: androidx.compose.ui.unit.Dp? = null
-) {
-    val base = Modifier.fillMaxWidth()
-    val modifier = if (minHeight != null) base.heightIn(min = minHeight) else base
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = FooterGray, fontSize = 15.sp) },
-        singleLine = singleLine,
-        shape = RoundedCornerShape(10.dp),
-        colors = styledInputColors(),
-        modifier = modifier,
-        enabled = enabled
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -379,8 +315,8 @@ private fun DropdownField(
             onValueChange = {},
             readOnly = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            shape = RoundedCornerShape(10.dp),
-            colors = styledInputColors(),
+            shape = BrandShapes.field,
+            colors = brandTextFieldColors(),
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled)
                 .fillMaxWidth(),
@@ -426,13 +362,13 @@ private fun PhotoSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(4f / 3f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(1.5.dp, SubtleDivider, RoundedCornerShape(12.dp))
+                    .clip(BrandShapes.iconTile)
+                    .border(BrandBorderWidth, SubtleDivider, BrandShapes.iconTile)
             )
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
                 onClick = onClear,
-                shape = RoundedCornerShape(24.dp),
+                shape = BrandShapes.pill,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = CorpIndigo),
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
@@ -466,50 +402,12 @@ private fun PhotoPillButton(
 ) {
     OutlinedButton(
         onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
+        shape = BrandShapes.pill,
         colors = ButtonDefaults.outlinedButtonColors(contentColor = LabelGray),
         modifier = modifier.height(48.dp),
         enabled = enabled
     ) {
         Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-private fun SubmitButton(enabled: Boolean, isLoading: Boolean, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        shape = RoundedCornerShape(28.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = CorpIndigo,
-            contentColor = Color.White,
-            disabledContainerColor = CorpIndigoPressed.copy(alpha = 0.5f),
-            disabledContentColor = Color.White.copy(alpha = 0.8f)
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp),
-        enabled = enabled
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-                color = Color.White
-            )
-        } else {
-            Text(
-                text = "Enviar ticket",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.size(8.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-        }
     }
 }
 
@@ -535,16 +433,3 @@ private fun CancelLink(enabled: Boolean, onClick: () -> Unit) {
         )
     }
 }
-
-@Composable
-private fun styledInputColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = CorpIndigo,
-    unfocusedBorderColor = InputBorder,
-    disabledBorderColor = InputBorder,
-    focusedTextColor = TextPrimary,
-    unfocusedTextColor = TextPrimary,
-    cursorColor = CorpIndigo,
-    focusedContainerColor = Color.White,
-    unfocusedContainerColor = Color.White,
-    disabledContainerColor = Color.White
-)

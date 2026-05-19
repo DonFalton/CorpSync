@@ -27,13 +27,9 @@ import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,9 +46,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.corpsyncmobile.data.Ticket
-import com.example.corpsyncmobile.data.TicketService
-import com.example.corpsyncmobile.supabase
+import com.example.corpsyncmobile.domain.model.Ticket
+import com.example.corpsyncmobile.data.repository.AuthRepository
+import com.example.corpsyncmobile.data.repository.CategoryRepository
+import com.example.corpsyncmobile.data.repository.TicketRepository
+import com.example.corpsyncmobile.ui.components.AppFooter
+import com.example.corpsyncmobile.ui.components.BrandHeader
+import com.example.corpsyncmobile.ui.components.BrandIconButton
+import com.example.corpsyncmobile.ui.components.DotBadge
+import com.example.corpsyncmobile.ui.components.ErrorState
+import com.example.corpsyncmobile.ui.components.LoadingState
+import com.example.corpsyncmobile.ui.components.SectionHeader
+import com.example.corpsyncmobile.ui.components.StatusPalettes
+import com.example.corpsyncmobile.ui.theme.BrandBorderWidth
+import com.example.corpsyncmobile.ui.theme.BrandShapes
 import com.example.corpsyncmobile.ui.theme.CorpIndigo
 import com.example.corpsyncmobile.ui.theme.FooterGray
 import com.example.corpsyncmobile.ui.theme.LabelGray
@@ -60,7 +67,6 @@ import com.example.corpsyncmobile.ui.theme.PageBackground
 import com.example.corpsyncmobile.ui.theme.SubtleDivider
 import com.example.corpsyncmobile.ui.theme.SurfaceWhite
 import com.example.corpsyncmobile.ui.theme.TextPrimary
-import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -68,38 +74,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
-
-private val estadoLabels = mapOf(
-    "pendiente" to "Pendiente",
-    "en_proceso" to "En proceso",
-    "resuelto" to "Resuelto"
-)
-
-private val categoriaLabels = mapOf(
-    "sin_categorizar" to "Sin categorizar",
-    "hardware" to "Hardware",
-    "software" to "Software",
-    "red" to "Red",
-    "otro" to "Otros"
-)
-
-private data class StatusPalette(val bg: Color, val fg: Color, val border: Color)
-
-private val statusOpenPalette = StatusPalette(
-    bg = Color(0xFFFFF7ED),
-    fg = Color(0xFFC2410C),
-    border = Color(0xFFFED7AA)
-)
-private val statusProgressPalette = StatusPalette(
-    bg = Color(0xFFEFF6FF),
-    fg = Color(0xFF1D4ED8),
-    border = Color(0xFFBFDBFE)
-)
-private val statusResolvedPalette = StatusPalette(
-    bg = Color(0xFFECFDF5),
-    fg = Color(0xFF047857),
-    border = Color(0xFFA7F3D0)
-)
 
 @Composable
 fun MyTicketsScreen(
@@ -112,9 +86,9 @@ fun MyTicketsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val user = remember { supabase.auth.currentUserOrNull() }
-    val email = user?.email.orEmpty()
-    val rawName = remember(user) { extractName(user?.userMetadata, email) }
+    val email = remember { AuthRepository.currentUserEmail().orEmpty() }
+    val metadata = remember { AuthRepository.currentUserMetadata() }
+    val rawName = remember(metadata, email) { extractName(metadata, email) }
     val displayName = remember(rawName) { prettifyName(rawName) }
     val initials = remember(rawName) { initialsFor(rawName) }
 
@@ -123,7 +97,7 @@ fun MyTicketsScreen(
             isLoading = true
             errorMessage = null
             try {
-                tickets = TicketService.listMine()
+                tickets = TicketRepository.listMine()
             } catch (e: Exception) {
                 errorMessage = e.message ?: "No se pudieron cargar los tickets"
             } finally {
@@ -134,11 +108,7 @@ fun MyTicketsScreen(
 
     fun signOut() {
         scope.launch {
-            try {
-                supabase.auth.signOut()
-            } catch (_: Exception) {
-                // ignore — proceed with local logout regardless
-            }
+            runCatching { AuthRepository.signOut() }
             onLogout()
         }
     }
@@ -200,12 +170,7 @@ private fun ListHeader(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(CorpIndigo)
-            .padding(horizontal = 24.dp, vertical = 24.dp)
-    ) {
+    BrandHeader {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -243,19 +208,11 @@ private fun ListHeader(
             }
 
             Box {
-                IconButton(
+                BrandIconButton(
+                    icon = Icons.Filled.Menu,
                     onClick = { menuOpen = true },
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color.White.copy(alpha = 0.15f))
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Menu,
-                        contentDescription = "Menú",
-                        tint = Color.White
-                    )
-                }
+                    contentDescription = "Menú"
+                )
                 DropdownMenu(
                     expanded = menuOpen,
                     onDismissRequest = { menuOpen = false }
@@ -312,13 +269,7 @@ private fun ListHeader(
 @Composable
 private fun SectionTitle() {
     Column {
-        Text(
-            text = "MIS TICKETS",
-            color = LabelGray,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.sp
-        )
+        SectionHeader("MIS TICKETS")
         Spacer(modifier = Modifier.height(12.dp))
         Box(
             modifier = Modifier
@@ -334,12 +285,12 @@ private fun TicketCard(ticket: Ticket, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(BrandShapes.card)
             .background(SurfaceWhite)
             .border(
-                width = 1.5.dp,
+                width = BrandBorderWidth,
                 color = SubtleDivider,
-                shape = RoundedCornerShape(14.dp)
+                shape = BrandShapes.card
             )
             .clickable(onClick = onClick)
             .padding(20.dp)
@@ -350,7 +301,10 @@ private fun TicketCard(ticket: Ticket, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                EstadoBadge(ticket.estado)
+                DotBadge(
+                    label = (CategoryRepository.estado[ticket.estado] ?: ticket.estado).uppercase(),
+                    palette = StatusPalettes.forEstado(ticket.estado)
+                )
                 Text(
                     text = "#${ticket.id}",
                     color = FooterGray,
@@ -377,7 +331,7 @@ private fun TicketCard(ticket: Ticket, onClick: () -> Unit) {
             ) {
                 MetaItem(
                     icon = Icons.Outlined.LocalOffer,
-                    label = categoriaLabels[ticket.categoria] ?: ticket.categoria ?: "—"
+                    label = CategoryRepository.categoria[ticket.categoria] ?: ticket.categoria ?: "—"
                 )
                 MetaItem(
                     icon = Icons.Outlined.Schedule,
@@ -402,42 +356,6 @@ private fun MetaItem(icon: androidx.compose.ui.graphics.vector.ImageVector, labe
             text = label,
             color = LabelGray,
             fontSize = 13.sp
-        )
-    }
-}
-
-@Composable
-private fun EstadoBadge(estado: String) {
-    val palette = when (estado) {
-        "resuelto" -> statusResolvedPalette
-        "en_proceso" -> statusProgressPalette
-        else -> statusOpenPalette
-    }
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(palette.bg)
-            .border(
-                width = 1.5.dp,
-                color = palette.border,
-                shape = RoundedCornerShape(20.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(7.dp)
-                .clip(CircleShape)
-                .background(palette.fg)
-        )
-        Spacer(modifier = Modifier.size(6.dp))
-        Text(
-            text = (estadoLabels[estado] ?: estado).uppercase(),
-            color = palette.fg,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
         )
     }
 }
@@ -483,25 +401,7 @@ private fun BoxScope.BottomActionBar(onCreateClick: () -> Unit) {
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = "CorpSync ITSM · v1.0 · DAM 2025–2026",
-            color = FooterGray,
-            fontSize = 12.sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-    }
-}
-
-@Composable
-private fun LoadingState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(color = CorpIndigo)
+        AppFooter(modifier = Modifier.padding(horizontal = 4.dp))
     }
 }
 
@@ -526,36 +426,6 @@ private fun EmptyState() {
                 color = LabelGray,
                 fontSize = 13.sp
             )
-        }
-    }
-}
-
-@Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = message,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 14.sp
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedButton(
-                onClick = onRetry,
-                shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = CorpIndigo),
-                modifier = Modifier.height(44.dp)
-            ) {
-                Text(
-                    text = "Reintentar",
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
         }
     }
 }

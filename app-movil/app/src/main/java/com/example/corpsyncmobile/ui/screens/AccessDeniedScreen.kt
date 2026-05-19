@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -25,7 +25,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,22 +39,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.corpsyncmobile.ui.components.AppFooter
+import com.example.corpsyncmobile.ui.components.IconTile
+import com.example.corpsyncmobile.ui.components.InfoSurface
+import com.example.corpsyncmobile.ui.theme.BadgeTextStyle
+import com.example.corpsyncmobile.ui.theme.BrandBorderWidth
+import com.example.corpsyncmobile.ui.theme.BrandPrimaryButtonHeight
+import com.example.corpsyncmobile.ui.theme.BrandShapes
 import com.example.corpsyncmobile.ui.theme.CorpIndigo
-import com.example.corpsyncmobile.ui.theme.FooterGray
 import com.example.corpsyncmobile.ui.theme.InputBorder
 import com.example.corpsyncmobile.ui.theme.LabelGray
 import com.example.corpsyncmobile.ui.theme.PageBackground
-import com.example.corpsyncmobile.ui.theme.SubtleDivider
+import com.example.corpsyncmobile.ui.theme.SoftRedBg
+import com.example.corpsyncmobile.ui.theme.SoftRedBorder
+import com.example.corpsyncmobile.ui.theme.SoftRedFg
+import com.example.corpsyncmobile.ui.theme.SoftRedFgStrong
 import com.example.corpsyncmobile.ui.theme.TextPrimary
-
-private val LockBg = Color(0xFFFEF2F2)
-private val LockBorder = Color(0xFFFECACA)
-private val LockFg = Color(0xFFDC2626)
-private val ErrorBadgeFg = Color(0xFFB91C1C)
-
-private val InfoCardBg = Color(0xFFF8FAFC)
-private val ContactIconBg = Color(0xFFEEF2FF)
-private val ContactIconBorder = Color(0xFFC7D2FE)
 
 private const val SUPPORT_EMAIL = "soporte@corpsync.com"
 
@@ -78,7 +77,7 @@ fun AccessDeniedScreen(onBackToLogin: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = 480.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = BrandShapes.cardLarge,
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
@@ -122,11 +121,7 @@ fun AccessDeniedScreen(onBackToLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "CorpSync ITSM · v1.0 · DAM 2025–2026",
-                color = FooterGray,
-                fontSize = 12.sp
-            )
+            AppFooter()
         }
     }
 }
@@ -136,7 +131,7 @@ private fun AppIcon() {
     Box(
         modifier = Modifier
             .size(72.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(BrandShapes.cardLarge)
             .background(CorpIndigo),
         contentAlignment = Alignment.Center
     ) {
@@ -156,14 +151,14 @@ private fun LockIcon() {
         modifier = Modifier
             .size(110.dp)
             .clip(CircleShape)
-            .background(LockBg)
-            .border(width = 2.dp, color = LockBorder, shape = CircleShape),
+            .background(SoftRedBg)
+            .border(width = 2.dp, color = SoftRedBorder, shape = CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Filled.Lock,
             contentDescription = null,
-            tint = LockFg,
+            tint = SoftRedFgStrong,
             modifier = Modifier.size(48.dp)
         )
     }
@@ -173,9 +168,9 @@ private fun LockIcon() {
 private fun ErrorBadge() {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(LockBg)
-            .border(width = 1.5.dp, color = LockBorder, shape = RoundedCornerShape(24.dp))
+            .clip(BrandShapes.pill)
+            .background(SoftRedBg)
+            .border(width = BrandBorderWidth, color = SoftRedBorder, shape = BrandShapes.pill)
             .padding(horizontal = 18.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -183,15 +178,13 @@ private fun ErrorBadge() {
             modifier = Modifier
                 .size(7.dp)
                 .clip(CircleShape)
-                .background(LockFg)
+                .background(SoftRedFgStrong)
         )
         Spacer(modifier = Modifier.size(8.dp))
         Text(
             text = "ERROR 403 · ACCESO DENEGADO",
-            color = ErrorBadgeFg,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.8.sp
+            color = SoftRedFg,
+            style = BadgeTextStyle
         )
     }
 }
@@ -217,46 +210,29 @@ private fun DescriptionText() {
 
 @Composable
 private fun ContactCard() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(InfoCardBg)
-            .border(width = 1.5.dp, color = SubtleDivider, shape = RoundedCornerShape(14.dp))
-            .padding(horizontal = 18.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(ContactIconBg)
-                .border(width = 1.5.dp, color = ContactIconBorder, shape = RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
+    InfoSurface(contentPadding = PaddingValues(horizontal = 18.dp, vertical = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Filled.Email,
-                contentDescription = null,
-                tint = CorpIndigo,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-        Spacer(modifier = Modifier.size(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "CONTACTA CON EL ADMINISTRADOR",
-                color = LabelGray,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.5.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = SUPPORT_EMAIL,
-                color = TextPrimary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            IconTile(icon = Icons.Filled.Email)
+            Spacer(modifier = Modifier.size(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "CONTACTA CON EL ADMINISTRADOR",
+                    color = LabelGray,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.5.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = SUPPORT_EMAIL,
+                    color = TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -265,15 +241,15 @@ private fun ContactCard() {
 private fun BackToLoginButton(onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
-        shape = RoundedCornerShape(28.dp),
+        shape = BrandShapes.button,
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = Color.White,
             contentColor = CorpIndigo
         ),
-        border = androidx.compose.foundation.BorderStroke(1.5.dp, InputBorder),
+        border = androidx.compose.foundation.BorderStroke(BrandBorderWidth, InputBorder),
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(BrandPrimaryButtonHeight)
     ) {
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowBack,

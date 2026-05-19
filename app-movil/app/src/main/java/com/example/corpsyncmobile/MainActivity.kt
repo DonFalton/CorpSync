@@ -18,7 +18,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.example.corpsyncmobile.data.ProfileService
+import com.example.corpsyncmobile.data.repository.AuthRepository
+import com.example.corpsyncmobile.data.repository.ProfileRepository
 import com.example.corpsyncmobile.ui.screens.AccessDeniedScreen
 import com.example.corpsyncmobile.ui.screens.CreateTicketScreen
 import com.example.corpsyncmobile.ui.screens.LoginScreen
@@ -27,7 +28,6 @@ import com.example.corpsyncmobile.ui.screens.TicketDetailScreen
 import com.example.corpsyncmobile.ui.theme.CorpIndigo
 import com.example.corpsyncmobile.ui.theme.CorpSyncMobileTheme
 import com.example.corpsyncmobile.ui.theme.PageBackground
-import io.github.jan.supabase.auth.auth
 
 private sealed interface Screen {
     object Splash : Screen
@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CorpSyncMobileTheme {
                 var screen by remember {
-                    val initial: Screen = if (supabase.auth.currentSessionOrNull() != null) Screen.Splash else Screen.Login
+                    val initial: Screen = if (AuthRepository.hasSession()) Screen.Splash else Screen.Login
                     mutableStateOf(initial)
                 }
 
@@ -92,15 +92,15 @@ private fun SplashGate(
     onUnauthenticated: () -> Unit
 ) {
     LaunchedEffect(Unit) {
-        if (supabase.auth.currentSessionOrNull() == null) {
+        if (!AuthRepository.hasSession()) {
             onUnauthenticated()
             return@LaunchedEffect
         }
-        val role = runCatching { ProfileService.currentRole() }.getOrNull()
-        if (role == ProfileService.ROLE_EMPLOYEE) {
+        val role = runCatching { ProfileRepository.currentRole() }.getOrNull()
+        if (role == ProfileRepository.ROLE_EMPLOYEE) {
             onEmployee()
         } else {
-            runCatching { supabase.auth.signOut() }
+            runCatching { AuthRepository.signOut() }
             onDenied()
         }
     }
