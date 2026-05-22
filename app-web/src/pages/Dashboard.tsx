@@ -116,7 +116,7 @@ export const Dashboard = () => {
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard General</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard General</h1>
 
         {tickets && tickets.length > 0 && (
           <button
@@ -145,7 +145,7 @@ export const Dashboard = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Total Tickets</p>
-              <h3 className="text-2xl font-bold text-gray-900">{totalTickets}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{totalTickets}</h3>
             </div>
           </div>
         </div>
@@ -163,7 +163,7 @@ export const Dashboard = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Nuevos</p>
-              <h3 className="text-2xl font-bold text-gray-900">{ticketsNuevos}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{ticketsNuevos}</h3>
             </div>
           </div>
         </div>
@@ -181,7 +181,7 @@ export const Dashboard = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">En Proceso</p>
-              <h3 className="text-2xl font-bold text-gray-900">{ticketsEnProceso}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{ticketsEnProceso}</h3>
             </div>
           </div>
         </div>
@@ -199,7 +199,7 @@ export const Dashboard = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Prioridad Alta</p>
-              <h3 className="text-2xl font-bold text-gray-900">{prioridadAlta}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{prioridadAlta}</h3>
             </div>
           </div>
         </div>

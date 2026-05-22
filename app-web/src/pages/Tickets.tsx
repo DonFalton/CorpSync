@@ -40,7 +40,7 @@ export const Tickets = () => {
   const isReadOnly = perfil?.rol === 'admin' && perfil?.departamento === 'Dirección';
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Suscripción de lectura y selección activa
   const { data: tickets, isLoading, isError, error } = useTickets();
   const [selectedTicket, setSelectedTicket] = useState<TicketWithRelations | null>(null);
@@ -60,7 +60,7 @@ export const Tickets = () => {
       if (state.filterEstado !== undefined) setFilterEstado(state.filterEstado);
       if (state.activeTab !== undefined) setActiveTab(state.activeTab);
       if (state.searchTerm !== undefined) setSearchTerm(state.searchTerm);
-      
+
       // 2. Auto-abrir ticket si existe
       if (state.openTicketId) {
         if (tickets && tickets.length > 0) {
@@ -131,7 +131,7 @@ export const Tickets = () => {
       const isOpen = ticket.estado !== 'resuelto';
       if (!isUrgent || !isOpen) return false;
     }
-    if (activeTab === 'pendientes_cierre' && ticket.estado !== 'resuelto') {
+    if (activeTab === 'resueltos' && ticket.estado !== 'resuelto') {
       return false;
     }
 
@@ -165,9 +165,9 @@ export const Tickets = () => {
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Gestión de Tickets</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Gestión de Tickets</h1>
         {!isReadOnly && (
-          <Link 
+          <Link
             to="/tickets/new"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm inline-block"
           >
@@ -182,16 +182,15 @@ export const Tickets = () => {
           { id: 'todos', label: 'Todos los tickets' },
           { id: 'sin_asignar', label: 'Sin Asignar' },
           { id: 'urgentes', label: 'Urgentes 🔥' },
-          { id: 'pendientes_cierre', label: 'Pendientes de Cierre ✅' }
+          { id: 'resueltos', label: 'Resueltos ✅' }
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border ${
-              activeTab === tab.id
+            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border ${activeTab === tab.id
                 ? 'bg-blue-600 text-white border-blue-600 shadow-md'
                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-            }`}
+              }`}
           >
             {tab.label}
           </button>
@@ -287,14 +286,13 @@ export const Tickets = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredTickets.map((ticket: TicketWithRelations) => {
             const sla = getTicketSLAStatus(ticket.creado_en, ticket.actualizado_en, ticket.estado);
-            
+
             return (
-              <div 
-                key={ticket.id} 
+              <div
+                key={ticket.id}
                 onClick={() => setSelectedTicket(ticket)}
-                className={`bg-white rounded-xl shadow-sm border p-5 hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden ${
-                  sla.isOverdue ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'
-                }`}
+                className={`bg-white rounded-xl shadow-sm border p-5 hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden ${sla.isOverdue ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'
+                  }`}
               >
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex flex-col items-start gap-2">
@@ -311,10 +309,10 @@ export const Tickets = () => {
                     {ticket.prioridad === 'por_asignar' ? 'SIN PRIORIDAD' : ticket.prioridad?.toUpperCase()}
                   </span>
                 </div>
-                
+
                 <h2 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">{ticket.titulo}</h2>
                 <p className="text-gray-600 text-sm mb-4 line-clamp-3">{ticket.descripcion}</p>
-                
+
                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
                   <div className="flex items-center mr-2 min-w-0">
                     <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0">
@@ -338,9 +336,9 @@ export const Tickets = () => {
       )}
 
       {selectedTicket && (
-        <TicketModal 
-          ticket={selectedTicket} 
-          onClose={() => setSelectedTicket(null)} 
+        <TicketModal
+          ticket={selectedTicket}
+          onClose={() => setSelectedTicket(null)}
         />
       )}
     </div>
